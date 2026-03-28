@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kužeľosečky — Pochop to vizuálne</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0e17; --fg: #e0e0e0; --fg-dim: #8892a8; --fg-muted: #556;
+            --panel-bg: #111827; --panel-border: #1e293b;
+            --input-bg: #1a2535; --input-border: #2a3a4a;
+            --row-bg: #1a1a2e; --explain-bg: #0f172a;
+            --grid: #1a2535; --axis: #2a3a4a; --axis-label: #445;
+            --curve-stroke: #34d399;
+        }
+
+        :root.light {
+            --bg: #f0f2f5; --fg: #1a1a2e; --fg-dim: #555; --fg-muted: #999;
+            --panel-bg: #ffffff; --panel-border: #d0d5dd;
+            --input-bg: #e8ecf1; --input-border: #bcc3cf;
+            --row-bg: #f0f2fa; --explain-bg: #f7f8fb;
+            --grid: #e0e4ea; --axis: #bbb; --axis-label: #888;
+            --curve-stroke: #059669;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg); color: var(--fg);
+            min-height: 100vh; overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        header { text-align: center; padding: 20px 20px 10px; position: relative; }
+        header h1 { font-size: 1.6rem; font-weight: 300; color: #34d399; letter-spacing: 2px; }
+        header p { font-size: 0.85rem; color: var(--fg-muted); margin-top: 4px; }
+
+        #btnTheme {
+            position: absolute; top: 16px; right: 20px;
+            padding: 6px 12px; border: 1px solid var(--input-border);
+            background: var(--input-bg); color: var(--fg-dim);
+            border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+        }
+        #btnTheme:hover { opacity: 0.8; }
+
+        .main-container {
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 20px; padding: 10px 20px 20px;
+            max-width: 1400px; margin: 0 auto;
+        }
+
+        .panel {
+            background: var(--panel-bg); border-radius: 12px;
+            border: 1px solid var(--panel-border); padding: 16px;
+        }
+        .panel h2 {
+            font-size: 0.8rem; text-transform: uppercase;
+            letter-spacing: 1.5px; color: #4a7a6a; margin-bottom: 10px;
+        }
+
+        /* Canvas */
+        .canvas-panel { width: 560px; min-height: 480px; }
+        #mainCanvas { display: block; margin: 0 auto; cursor: grab; border-radius: 8px; }
+        #mainCanvas:active { cursor: grabbing; }
+
+        /* Slider */
+        .slider-box {
+            margin-top: 12px; padding: 10px 12px;
+            background: var(--explain-bg); border-radius: 8px;
+        }
+        .slider-box label {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.85rem; color: var(--fg-dim);
+        }
+        .slider-box input[type="range"] { flex: 1; accent-color: #34d399; }
+        .slider-box .ecc-val { color: #34d399; font-weight: 700; font-size: 1.1rem; min-width: 45px; text-align: right; }
+
+        .type-label {
+            text-align: center; margin-top: 8px;
+            font-size: 1rem; font-weight: 600;
+        }
+
+        /* Values */
+        .values-panel { width: 300px; }
+        .value-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; border-radius: 8px; margin-bottom: 5px;
+            font-family: 'Courier New', monospace; font-size: 0.85rem;
+            background: var(--row-bg);
+        }
+        .value-row .label { font-weight: 700; }
+        .value-row .num { font-size: 1rem; }
+
+        .color-type { color: #34d399; }
+        .color-focus { color: #f59e0b; }
+        .color-dir { color: #a78bfa; }
+        .color-dist1 { color: #f87171; }
+        .color-dist2 { color: #60a5fa; }
+        .color-sum { color: #fbbf24; }
+
+        .explanation {
+            margin-top: 12px; padding: 12px;
+            background: var(--explain-bg); border-radius: 8px;
+            font-size: 0.78rem; line-height: 1.7; color: var(--fg-dim);
+        }
+        .explanation strong { color: #34d399; }
+
+        .property-box {
+            margin-top: 10px; padding: 10px 12px;
+            background: var(--explain-bg); border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.82rem; line-height: 1.8; color: var(--fg-dim);
+        }
+        .property-box .check { color: #34d399; }
+
+        /* Lesson */
+        .lesson-panel { width: 100%; max-width: 1080px; }
+        .steps { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .step-btn {
+            padding: 8px 16px; border: 1px solid var(--input-border);
+            background: var(--input-bg); color: var(--fg-dim);
+            border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+        }
+        .step-btn:hover { opacity: 0.8; }
+        .step-btn.active { background: #1e3f3a; border-color: #34d399; color: #e0e0e0; }
+        .lesson-content {
+            padding: 16px; background: var(--explain-bg); border-radius: 8px;
+            font-size: 0.88rem; line-height: 1.8; color: var(--fg-dim); min-height: 80px;
+        }
+        .lesson-content strong { color: #34d399; }
+        .lesson-content .c-focus { color: #f59e0b; font-weight: 600; }
+        .lesson-content .c-dir { color: #a78bfa; font-weight: 600; }
+        .lesson-content .c-curve { color: #34d399; font-weight: 600; }
+
+        :root.light .step-btn.active { background: #d1fae5; border-color: #059669; color: #064e3b; }
+        :root.light .type-label { color: #064e3b; }
+
+        /* Cone panel */
+        .cone-panel { width: 340px; min-height: 400px; }
+        #coneCanvas { display: block; margin: 0 auto; border-radius: 8px; }
+        .cone-label { text-align: center; margin-top: 8px; font-size: 0.8rem; color: var(--fg-dim); }
+
+        /* Challenge */
+        .challenge-box {
+            margin-top: 10px; padding: 10px 12px;
+            background: var(--row-bg); border: 1px solid var(--input-border);
+            border-radius: 8px; font-size: 0.78rem; line-height: 1.6;
+        }
+        .challenge-box .challenge-title {
+            color: #fbbf24; font-weight: 700; font-size: 0.7rem;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+        }
+        .challenge-box .challenge-text { color: var(--fg); }
+        .challenge-box .challenge-result {
+            color: #34d399; font-weight: 600; margin-top: 4px;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .challenge-box .challenge-result.solved { opacity: 1; }
+        .challenge-box .btn-next {
+            margin-top: 6px; padding: 4px 10px;
+            border: 1px solid var(--input-border); background: var(--input-bg);
+            color: #7eb8da; border-radius: 4px; cursor: pointer; font-size: 0.7rem;
+        }
+        .challenge-box .btn-next:hover { opacity: 0.8; }
+
+        @media (max-width: 900px) {
+            .canvas-panel, .values-panel, .cone-panel { width: 100%; max-width: 560px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>KUŽEĽOSEČKY</h1>
+    <p>Jeden parameter mení všetko. Posuň slider a pozoruj.</p>
+    <button id="btnTheme" onclick="toggleTheme()">Svetlý režim</button>
+</header>
+
+<div class="main-container">
+
+    <div class="panel canvas-panel">
+        <h2>Kužeľosečka — pohľad zhora</h2>
+        <canvas id="mainCanvas" width="530" height="400"></canvas>
+        <div class="slider-box">
+            <label>
+                Excentricita (e):
+                <input type="range" id="eccSlider" min="0" max="200" value="0" step="1">
+                <span class="ecc-val" id="eccVal">0.00</span>
+            </label>
+        </div>
+        <div class="type-label color-type" id="typeLabel">Kružnica</div>
+    </div>
+
+    <div class="panel values-panel">
+        <h2>Vlastnosti</h2>
+        <div class="value-row"><span class="label color-type">Typ</span><span class="num" id="vType">Kružnica</span></div>
+        <div class="value-row"><span class="label">e</span><span class="num color-type" id="vEcc">0.00</span></div>
+        <div class="value-row"><span class="label color-dist1">d(P, F₁)</span><span class="num" id="vDist1">—</span></div>
+        <div class="value-row"><span class="label color-dist2">d(P, F₂)</span><span class="num" id="vDist2">—</span></div>
+        <div class="value-row"><span class="label color-sum" id="vSumLabel">Súčet</span><span class="num" id="vSum">—</span></div>
+        <div class="value-row"><span class="label color-dir">d(P, riad.)</span><span class="num" id="vDistDir">—</span></div>
+        <div class="value-row"><span class="label">d(P,F)/d(P,r)</span><span class="num color-type" id="vRatio">—</span></div>
+
+        <div class="property-box" id="propertyBox"></div>
+
+        <div class="challenge-box">
+            <div class="challenge-title">Výzva</div>
+            <div class="challenge-text" id="challengeText"></div>
+            <div class="challenge-result" id="challengeResult">Správne!</div>
+            <button class="btn-next" id="btnNextChallenge">Ďalšia výzva</button>
+        </div>
+
+        <div class="explanation">
+            <strong>Kužeľosečka</strong> = množina bodov, kde pomer<br>
+            vzdialenosť k <span style="color:#f59e0b">ohnisku</span> / vzdialenosť k <span style="color:#a78bfa">riadiacej priamke</span> = <strong>e</strong><br><br>
+            e = 0 → kružnica &nbsp; | &nbsp; 0 &lt; e &lt; 1 → elipsa<br>
+            e = 1 → parabola &nbsp; | &nbsp; e &gt; 1 → hyperbola
+        </div>
+    </div>
+
+    <div class="panel cone-panel">
+        <h2>Rez kužeľom</h2>
+        <canvas id="coneCanvas" width="310" height="360"></canvas>
+        <div class="cone-label" id="coneLabel">Kolmý rez → Kružnica</div>
+    </div>
+
+    <div class="panel lesson-panel">
+        <h2>Pochop krok za krokom</h2>
+        <div class="steps">
+            <button class="step-btn active" data-step="0">1. Jedna rodina</button>
+            <button class="step-btn" data-step="1">2. Excentricita</button>
+            <button class="step-btn" data-step="2">3. Kružnica & Elipsa</button>
+            <button class="step-btn" data-step="3">4. Parabola</button>
+            <button class="step-btn" data-step="4">5. Hyperbola</button>
+            <button class="step-btn" data-step="5">6. Ohniská</button>
+            <button class="step-btn" data-step="6">7. V praxi</button>
+        </div>
+        <div class="lesson-content" id="lessonContent"></div>
+    </div>
+
+</div>
+
+<script>
+// ========================================
+// STATE
+// ========================================
+let ecc = 0;
+let pointAngle = Math.PI / 4;
+let pointBranch = 1; // +1 = right branch, -1 = left branch (hyperbola only)
+let isLight = false;
+let dragging = false;
+
+function toggleTheme() {
+    isLight = !isLight;
+    document.documentElement.classList.toggle('light', isLight);
+    document.getElementById('btnTheme').textContent = isLight ? 'Tmavý režim' : 'Svetlý režim';
+    render();
+}
+
+function themeColor(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+const lessons = [
+    `<strong>Kružnica, elipsa, parabola, hyperbola — to nie sú 4 rôzne veci.</strong>
+     Je to jedna rodina kriviek. Všetky vzniknú rezaním kužeľa rovinou pod rôznym uhlom.
+     <br><br>Ale ešte jednoduchšie: všetky sa dajú opísať <strong>jedným číslom</strong> — excentricitou <strong>e</strong>.
+     <br><br>➜ Posuň slider hore a sleduj, ako sa krivka plynulo mení.`,
+
+    `<strong>Excentricita (e) = ako veľmi sa krivka líši od kruhu.</strong>
+     <br>Každá kužeľosečka je množina bodov, kde platí:
+     <br>vzdialenosť k <span class="c-focus">ohnisku</span> / vzdialenosť k <span class="c-dir">riadiacej priamke</span> = <span class="c-curve">e</span>
+     <br><br><span class="c-curve">e = 0</span> → kružnica (dokonalý kruh)
+     <br><span class="c-curve">0 &lt; e &lt; 1</span> → elipsa (sploštený kruh)
+     <br><span class="c-curve">e = 1</span> → parabola (otvorená krivka)
+     <br><span class="c-curve">e &gt; 1</span> → hyperbola (dve vetvy)
+     <br><br>➜ Pozri na panel vpravo — pomer d(P,F)/d(P,r) sa vždy rovná e.`,
+
+    `<strong>Kružnica (e=0) je špeciálny prípad elipsy.</strong>
+     <br>Elipsa má 2 <span class="c-focus">ohniská</span>. Pre každý bod na elipse platí:
+     <br><span style="color:#f87171">d(P,F₁)</span> + <span style="color:#60a5fa">d(P,F₂)</span> = konštanta
+     <br><br>Keď sa obe ohniská spoja do jedného bodu → kružnica.
+     <br>Čím ďalej sú od seba → tým splostenejšia elipsa.
+     <br><br>➜ Nastav e medzi 0 a 1. Ťahaj bod po krivke a sleduj, že súčet vzdialeností sa nemení.`,
+
+    `<strong>Parabola (e=1) je hranica medzi uzavretým a otvoreným.</strong>
+     <br>Má jedno <span class="c-focus">ohnisko</span> a jednu <span class="c-dir">riadiacu priamku</span>.
+     <br>Pre každý bod: vzdialenosť k ohnisku = vzdialenosť k riadiacej priamke.
+     <br><br>Preto parabolické zrkadlo sústreďuje lúče do jedného bodu — ohniska.
+     <br><br>➜ Nastav e = 1.00. Ťahaj bod a pozri, že obe vzdialenosti sú vždy rovnaké.`,
+
+    `<strong>Hyperbola (e>1) má dve vetvy.</strong>
+     <br>Má 2 <span class="c-focus">ohniská</span>. Pre každý bod platí:
+     <br>|<span style="color:#f87171">d(P,F₁)</span> − <span style="color:#60a5fa">d(P,F₂)</span>| = konštanta
+     <br><br>Nie súčet (ako elipsa), ale <strong>rozdiel</strong> vzdialeností je konštantný.
+     <br><br>➜ Nastav e > 1. Ťahaj bod a sleduj, že rozdiel vzdialeností sa nemení.`,
+
+    `<strong>Ohniská majú fyzikálny význam.</strong>
+     <br>Elipsa: zvuk/svetlo z jedného ohniska sa odrazí do druhého (šepkajúce galérie).
+     <br>Parabola: rovnobežné lúče sa odrazia do ohniska (satelitná anténa, reflektor).
+     <br>Hyperbola: rozdiel vzdialeností → GPS lokalizácia (trilaterácia).
+     <br><br>➜ Sleduj <span class="c-focus">žlté body</span> — to sú ohniská. Pri e=0 splynú, pri e→1 sa od seba vzďaľujú.`,
+
+    `<strong>Kužeľosečky sú všade.</strong>
+     <br>Planéty: obežné dráhy sú elipsy (Kepler) — Slnko je v ohnisku.
+     <br>Kométy: paraboly alebo hyperboly (jednorazový prelet).
+     <br>Svetlomety: parabolické reflektory.
+     <br>Chladiace veže: hyperbolický tvar.
+     <br>GPS: hyperboly z rozdielov časov signálov.
+     <br><br>➜ Skús nastaviť e ≈ 0.017 — to je excentricita obežnej dráhy Zeme. Takmer kruh!`
+];
+
+// ========================================
+// CANVAS
+// ========================================
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+canvas.width = 530 * dpr; canvas.height = 400 * dpr;
+canvas.style.width = '530px'; canvas.style.height = '400px';
+ctx.scale(dpr, dpr);
+
+const W = 530, H = 400;
+const CX = W / 2, CY = H / 2;
+const BASE_SCALE = 120; // pixels per unit
+
+// Semi-latus rectum (fixed for visual consistency)
+const L = 1.2;
+
+function isHyperbola(e) { return e > 1.01; }
+function isParabola(e) { return e >= 0.99 && e <= 1.01; }
+function isEllipse(e) { return e > 0.001 && e < 0.99; }
+function isCircle(e) { return e < 0.001; }
+
+function getScale(e) {
+    if (!isHyperbola(e)) return BASE_SCALE;
+    // For hyperbola, shrink scale so both branches + foci fit
+    const a = L / (e * e - 1);
+    const c = a * e;
+    // We need to fit from about -2c to +vertex in X, and ±b in Y
+    const b = Math.sqrt(c * c - a * a);
+    const neededX = 2 * c + a; // total horizontal span
+    const neededY = Math.max(b * 2, a * 2);
+    const scaleX = (W - 80) / neededX;
+    const scaleY = (H - 60) / neededY;
+    return Math.min(scaleX, scaleY, BASE_SCALE);
+}
+
+function getConicPoint(theta, e) {
+    if (e < 0.001) {
+        return { x: L * Math.cos(theta), y: L * Math.sin(theta) };
+    }
+    const denom = 1 + e * Math.cos(theta);
+    if (denom <= 0.01) return null;
+    const r = L / denom;
+    if (r > 20) return null;
+    return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
+}
+
+function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const e = ecc;
+    const SCALE = getScale(e);
+
+    // Grid
+    ctx.strokeStyle = themeColor('--grid');
+    ctx.lineWidth = 1;
+    for (let i = -5; i <= 5; i++) {
+        if (i === 0) continue;
+        const gx = CX + i * SCALE;
+        const gy = CY + i * SCALE;
+        if (gx > 0 && gx < W) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+        if (gy > 0 && gy < H) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+    }
+
+    // Axes
+    ctx.strokeStyle = themeColor('--axis');
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, CY); ctx.lineTo(W, CY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CX, 0); ctx.lineTo(CX, H); ctx.stroke();
+
+    // Offset: F1 position on screen (polar origin)
+    const _o = getOffset(e);
+    const offsetX = _o.x, offsetY = _o.y;
+
+    // Draw directrix
+    if (e >= 0.05) {
+        const dirXWorld = -L / e; // in focus coords
+        const dirScreenX = offsetX + dirXWorld * SCALE;
+        ctx.strokeStyle = '#a78bfa66';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 5]);
+        ctx.beginPath();
+        ctx.moveTo(dirScreenX, 20);
+        ctx.lineTo(dirScreenX, H - 20);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#a78bfa';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('riadiaca priamka', dirScreenX, 14);
+
+        // Second directrix for hyperbola (symmetric about center)
+        if (isHyperbola(e)) {
+            const dir2ScreenX = 2 * CX - dirScreenX; // mirror around center
+            ctx.strokeStyle = '#a78bfa66';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 5]);
+            ctx.beginPath();
+            ctx.moveTo(dir2ScreenX, 20);
+            ctx.lineTo(dir2ScreenX, H - 20);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    }
+
+    // Clip to canvas area for clean edges
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.clip();
+
+    ctx.strokeStyle = themeColor('--curve-stroke');
+    ctx.lineWidth = 2.5;
+
+    if (isHyperbola(e)) {
+        // Hyperbola: draw parametrically centered on canvas center
+        // x = ±a/cos(t), y = b·tan(t), center at CX, CY
+        const aH = L / (e * e - 1);
+        const cH = aH * e;
+        const bH = Math.sqrt(cH * cH - aH * aH);
+        const steps = 600;
+
+        // Right branch (x > 0 from center, near F1)
+        ctx.beginPath();
+        let started = false;
+        for (let i = 0; i <= steps; i++) {
+            const t = -1.5 + (i / steps) * 3.0; // t from -1.5 to 1.5 (not reaching ±π/2)
+            const cosT = Math.cos(t);
+            if (Math.abs(cosT) < 0.01) { started = false; continue; }
+            const x = aH / cosT;
+            const y = bH * Math.tan(t);
+            if (x < 0) { started = false; continue; }
+            const sx = CX + x * SCALE;
+            const sy = CY - y * SCALE;
+            if (!started) { ctx.moveTo(sx, sy); started = true; }
+            else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+
+        // Left branch (x < 0 from center, near F2)
+        ctx.beginPath();
+        started = false;
+        for (let i = 0; i <= steps; i++) {
+            const t = -1.5 + (i / steps) * 3.0;
+            const cosT = Math.cos(t);
+            if (Math.abs(cosT) < 0.01) { started = false; continue; }
+            const x = -aH / cosT;
+            const y = -bH * Math.tan(t);
+            if (x > 0) { started = false; continue; }
+            const sx = CX + x * SCALE;
+            const sy = CY - y * SCALE;
+            if (!started) { ctx.moveTo(sx, sy); started = true; }
+            else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+    } else {
+        // Circle, ellipse, parabola: polar from F1
+        ctx.beginPath();
+        let started = false;
+        const steps = 1200;
+        for (let i = 0; i <= steps; i++) {
+            const theta = (i / steps) * Math.PI * 2 - Math.PI;
+            const pt = getConicPoint(theta, e);
+            if (!pt) { started = false; continue; }
+            const sx = offsetX + pt.x * SCALE;
+            const sy = offsetY - pt.y * SCALE;
+            if (!started) { ctx.moveTo(sx, sy); started = true; }
+            else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+    }
+
+    ctx.restore(); // remove clip
+
+    // Focus 1 (at polar origin)
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(offsetX, offsetY, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = themeColor('--axis-label');
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('F₁', offsetX + 10, offsetY - 8);
+
+    // Focus 2 (for ellipse/hyperbola)
+    if (isEllipse(e)) {
+        const cVal = L * e / (1 - e * e);
+        const f2sx = offsetX + 2 * cVal * SCALE;
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(f2sx, offsetY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('F₂', f2sx + 10, offsetY - 8);
+    } else if (isHyperbola(e)) {
+        // F2 at -c from center = CX - c*SCALE
+        const cVal = L * e / (e * e - 1);
+        const f2sx = CX - cVal * SCALE;
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(f2sx, offsetY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('F₂', f2sx + 10, offsetY - 8);
+    }
+
+    // Draggable point on curve
+    let px, py, ptWorldX, ptWorldY; // screen and world coords of point (world = from F1)
+    if (isHyperbola(e)) {
+        // Hyperbola: parametric, choose branch based on pointBranch
+        const aH = L / (e * e - 1);
+        const cH = aH * e;
+        const bH = Math.sqrt(cH * cH - aH * aH);
+        const t = Math.max(-1.45, Math.min(1.45, pointAngle));
+        const sign = pointBranch; // +1 right, -1 left
+        const xCenter = sign * aH / Math.cos(t);
+        const yCenter = sign * bH * Math.tan(t);
+        ptWorldX = xCenter - cH; // convert from center to from-F1 coords (F1 is at +c from center)
+        ptWorldY = yCenter;
+        px = CX + xCenter * SCALE;
+        py = CY - yCenter * SCALE;
+    } else {
+        const pt = getConicPoint(pointAngle, e);
+        if (pt) {
+            ptWorldX = pt.x; ptWorldY = pt.y; // from F1
+            px = offsetX + pt.x * SCALE;
+            py = offsetY - pt.y * SCALE;
+        }
+    }
+
+    if (px !== undefined) {
+        // F1 and F2 screen positions
+        const f1sx = offsetX, f1sy = offsetY;
+        let f2sx = null;
+        if (isEllipse(e)) {
+            f2sx = offsetX + 2 * (L * e / (1 - e * e)) * SCALE;
+        } else if (isHyperbola(e)) {
+            f2sx = CX - (L * e / (e * e - 1)) * SCALE;
+        }
+
+        // Distance lines to F1
+        ctx.strokeStyle = '#f8717188';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(f1sx, f1sy);
+        ctx.stroke();
+
+        // Distance to F2
+        if (f2sx !== null) {
+            ctx.strokeStyle = '#60a5fa88';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(f2sx, offsetY);
+            ctx.stroke();
+        }
+
+        // Distance to directrix
+        if (e >= 0.05) {
+            const dirXWorld = -L / e;
+            const dirScreenX = offsetX + dirXWorld * SCALE;
+            ctx.strokeStyle = '#a78bfa66';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(dirScreenX, py);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Point
+        ctx.fillStyle = isLight ? '#222' : '#fff';
+        ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = themeColor('--fg-dim');
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('P', px + 10, py - 8);
+    }
+}
+
+// ========================================
+// UPDATE VALUES
+// ========================================
+function updateValues() {
+    const e = ecc;
+    let typeName;
+    if (isCircle(e)) typeName = 'Kružnica';
+    else if (isEllipse(e)) typeName = 'Elipsa';
+    else if (isParabola(e)) typeName = 'Parabola';
+    else typeName = 'Hyperbola';
+
+    document.getElementById('vType').textContent = typeName;
+    document.getElementById('typeLabel').textContent = typeName;
+    document.getElementById('vEcc').textContent = e.toFixed(2);
+    document.getElementById('eccVal').textContent = e.toFixed(2);
+
+    // Get point coords: for hyperbola use parametric (from center), else polar (from F1)
+    let pxW, pyW; // world coords relative to F1
+    if (isHyperbola(e)) {
+        const aH = L / (e * e - 1);
+        const cH = aH * e;
+        const bH = Math.sqrt(cH * cH - aH * aH);
+        const t = Math.max(-1.45, Math.min(1.45, pointAngle));
+        const sign = pointBranch;
+        pxW = sign * aH / Math.cos(t) - cH; // from center to from-F1
+        pyW = sign * bH * Math.tan(t);
+    } else {
+        const pt = getConicPoint(pointAngle, e);
+        if (!pt) return;
+        pxW = pt.x; pyW = pt.y;
+    }
+
+    // Distance to F1 (at origin in polar coords / offset from F1 for hyperbola)
+    const d1 = Math.sqrt(pxW * pxW + pyW * pyW);
+    document.getElementById('vDist1').textContent = d1.toFixed(3);
+
+    // Distance to directrix (directrix at x = -L/e from F1)
+    if (e >= 0.05) {
+        const dirX = -L / e;
+        const dDir = Math.abs(pxW - dirX);
+        document.getElementById('vDistDir').textContent = dDir.toFixed(3);
+        document.getElementById('vRatio').textContent = (d1 / dDir).toFixed(3);
+    } else {
+        document.getElementById('vDistDir').textContent = '—';
+        document.getElementById('vRatio').textContent = '—';
+    }
+
+    // F2 distance and sum/difference
+    const propBox = document.getElementById('propertyBox');
+    if (isEllipse(e)) {
+        const cVal = L * e / (1 - e * e);
+        const f2x = 2 * cVal;
+        const d2 = Math.sqrt((pxW - f2x) ** 2 + pyW * pyW);
+        document.getElementById('vDist2').textContent = d2.toFixed(3);
+        const sum = d1 + d2;
+        document.getElementById('vSumLabel').textContent = 'Súčet';
+        document.getElementById('vSum').textContent = sum.toFixed(3);
+        propBox.innerHTML = `<span class="color-dist1">${d1.toFixed(3)}</span> + <span class="color-dist2">${d2.toFixed(3)}</span> = <strong>${sum.toFixed(3)}</strong> <span class="check">✓ konšt.</span>`;
+    } else if (isHyperbola(e)) {
+        const cH = L * e / (e * e - 1);
+        const f2x = -2 * cH;
+        const d2 = Math.sqrt((pxW - f2x) ** 2 + pyW * pyW);
+        document.getElementById('vDist2').textContent = d2.toFixed(3);
+        const diff = Math.abs(d1 - d2);
+        document.getElementById('vSumLabel').textContent = '|Rozdiel|';
+        document.getElementById('vSum').textContent = diff.toFixed(3);
+        propBox.innerHTML = `|<span class="color-dist1">${d1.toFixed(3)}</span> − <span class="color-dist2">${d2.toFixed(3)}</span>| = <strong>${diff.toFixed(3)}</strong> <span class="check">✓ konšt.</span>`;
+    } else if (isParabola(e)) {
+        document.getElementById('vDist2').textContent = '—';
+        document.getElementById('vSumLabel').textContent = '—';
+        document.getElementById('vSum').textContent = '—';
+        propBox.innerHTML = `<span class="color-dist1">d(P,F)</span> = <span class="color-dir">d(P,r)</span> = <strong>${d1.toFixed(3)}</strong> <span class="check">✓ rovné</span>`;
+    } else {
+        document.getElementById('vDist2').textContent = '—';
+        document.getElementById('vSumLabel').textContent = '—';
+        document.getElementById('vSum').textContent = '—';
+        propBox.innerHTML = `Všetky body rovnako ďaleko od stredu: <strong>${d1.toFixed(3)}</strong> <span class="check">✓</span>`;
+    }
+}
+
+function render() { draw(); drawCone(); updateValues(); checkChallenge(); }
+
+// ========================================
+// INTERACTION
+// ========================================
+const slider = document.getElementById('eccSlider');
+slider.addEventListener('input', () => {
+    ecc = parseInt(slider.value) / 100;
+    render();
+});
+
+function getOffset(e) {
+    const S = getScale(e);
+    let ox;
+    if (isHyperbola(e)) {
+        // Hyperbola drawn parametrically centered at CX.
+        // F1 at +c from center. Polar origin = CX + c*S
+        const a = L / (e * e - 1);
+        ox = CX + a * e * S;
+    } else if (isParabola(e)) {
+        ox = CX - 0.3 * S;
+    } else {
+        // Circle/Ellipse: center at CX, F1 to the left
+        const cVal = isCircle(e) ? 0 : L * e / (1 - e * e);
+        ox = CX - cVal * S;
+    }
+    return { x: ox, y: CY, s: S };
+}
+
+function getAngleFromMouse(ev) {
+    const rect = canvas.getBoundingClientRect();
+    const e = ecc;
+    if (isHyperbola(e)) {
+        const S = getScale(e);
+        const mx = (ev.clientX - rect.left - CX) / S;
+        const my = -(ev.clientY - rect.top - CY) / S;
+        const bH = Math.sqrt((L * e / (e * e - 1)) ** 2 - (L / (e * e - 1)) ** 2);
+        pointBranch = mx >= 0 ? 1 : -1; // detect which branch
+        return Math.atan(my / bH);
+    }
+    const o = getOffset(e);
+    const mx = (ev.clientX - rect.left - o.x) / o.s;
+    const my = -(ev.clientY - rect.top - o.y) / o.s;
+    return Math.atan2(my, mx);
+}
+
+canvas.addEventListener('mousedown', ev => {
+    dragging = true;
+    pointAngle = getAngleFromMouse(ev);
+    render();
+});
+window.addEventListener('mousemove', ev => {
+    if (!dragging) return;
+    pointAngle = getAngleFromMouse(ev);
+    render();
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+
+canvas.addEventListener('touchstart', ev => {
+    ev.preventDefault(); dragging = true;
+    pointAngle = getAngleFromMouse(ev.touches[0]);
+    render();
+}, { passive: false });
+window.addEventListener('touchmove', ev => {
+    if (!dragging) return;
+    pointAngle = getAngleFromMouse(ev.touches[0]);
+    render();
+}, { passive: false });
+window.addEventListener('touchend', () => { dragging = false; });
+
+// ========================================
+// LESSONS
+// ========================================
+const stepBtns = document.querySelectorAll('.step-btn');
+const lessonContent = document.getElementById('lessonContent');
+
+function showLesson(idx) {
+    stepBtns.forEach(b => b.classList.remove('active'));
+    stepBtns[idx].classList.add('active');
+    lessonContent.innerHTML = lessons[idx];
+}
+
+stepBtns.forEach(btn => {
+    btn.addEventListener('click', () => showLesson(parseInt(btn.dataset.step)));
+});
+
+// ========================================
+// CONE SLICING
+// ========================================
+const coneCanvas = document.getElementById('coneCanvas');
+const coneCtx = coneCanvas.getContext('2d');
+const coneDpr = window.devicePixelRatio || 1;
+coneCanvas.width = 310 * coneDpr; coneCanvas.height = 360 * coneDpr;
+coneCanvas.style.width = '310px'; coneCanvas.style.height = '360px';
+coneCtx.scale(coneDpr, coneDpr);
+
+function drawCone() {
+    const c = coneCtx;
+    const w = 310, h = 360;
+    c.clearRect(0, 0, w, h);
+    const e = ecc;
+
+    // 3D projection
+    const rotX = -0.45; // look slightly from above
+    const rotY = 0.55;  // rotate to see 3D
+    const scale3d = 90;
+    const cx = w / 2, cy = h / 2;
+
+    function project(x, y, z) {
+        // Y is cone axis (vertical in 3D), X/Z horizontal
+        const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+        const x1 = x * cosY + z * sinY;
+        const z1 = -x * sinY + z * cosY;
+        const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+        const y2 = y * cosX - z1 * sinX;
+        const z2 = y * sinX + z1 * cosX;
+        return { x: cx + x1 * scale3d, y: cy - y2 * scale3d, z: z2 };
+    }
+
+    // Cone parameters
+    const coneHalf = 0.42; // half-angle from axis
+    const coneH = 1.5;     // height of each half-cone
+    const tanA = Math.tan(coneHalf);
+
+    // Draw cone wireframe rings
+    function drawRing(yPos, alpha) {
+        const r = Math.abs(yPos) * tanA;
+        c.strokeStyle = alpha;
+        c.lineWidth = 1;
+        c.beginPath();
+        for (let i = 0; i <= 64; i++) {
+            const th = (i / 64) * Math.PI * 2;
+            const p = project(r * Math.cos(th), yPos, r * Math.sin(th));
+            if (i === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
+        }
+        c.stroke();
+    }
+
+    // Draw cone edges (4 lines from apex)
+    const edgeColor = themeColor('--axis');
+    c.strokeStyle = edgeColor;
+    c.lineWidth = 1.2;
+    for (let i = 0; i < 4; i++) {
+        const th = (i / 4) * Math.PI * 2 + 0.3;
+        const apx = project(0, 0, 0);
+        // Upper cone
+        const rTop = coneH * tanA;
+        const pTop = project(rTop * Math.cos(th), coneH, rTop * Math.sin(th));
+        c.beginPath(); c.moveTo(apx.x, apx.y); c.lineTo(pTop.x, pTop.y); c.stroke();
+        // Lower cone
+        const pBot = project(rTop * Math.cos(th), -coneH, rTop * Math.sin(th));
+        c.beginPath(); c.moveTo(apx.x, apx.y); c.lineTo(pBot.x, pBot.y); c.stroke();
+    }
+
+    // Rings at various heights
+    const gridAlpha = themeColor('--grid');
+    drawRing(coneH, edgeColor);
+    drawRing(-coneH, edgeColor);
+    drawRing(coneH * 0.5, gridAlpha);
+    drawRing(-coneH * 0.5, gridAlpha);
+
+    // === INTERSECTION CURVE ===
+    // Cone: x² + z² = y²·tan²(α),  axis = Y
+    //
+    // Circle (e=0):    horizontal plane y = d          → x²+z² = d²·tan²A → circle
+    // Ellipse (e<1):   tilted plane y = x·tanB + d     → ellipse
+    // Parabola (e=1):  plane parallel to edge           → parabola
+    // Hyperbola (e>1): VERTICAL plane x = offset        → z² = y²tan²A - offset²
+    //                  cuts both cones → two branches
+
+    const steps = 300;
+    c.strokeStyle = '#34d399';
+    c.lineWidth = 3;
+
+    if (isHyperbola(e)) {
+        // Vertical plane x = offset, perpendicular to base, cuts both cones
+        // offset controls how far from axis (smaller = closer to degenerate lines)
+        const offset = 0.15 + (e - 1) * 0.25; // grows with e
+        const yMin = offset / tanA; // minimum |y| where plane intersects cone
+
+        // Draw the vertical cutting plane as a semi-transparent quad
+        const planeAlpha = 0.15;
+        const pH = coneH;
+        const pW = coneH * tanA;
+        const corners = [
+            project(offset, -pH, -pW), project(offset, -pH, pW),
+            project(offset, pH, pW),   project(offset, pH, -pW)
+        ];
+        c.fillStyle = `rgba(52,211,153,${planeAlpha})`;
+        c.beginPath();
+        c.moveTo(corners[0].x, corners[0].y);
+        for (let i = 1; i < 4; i++) c.lineTo(corners[i].x, corners[i].y);
+        c.closePath(); c.fill();
+
+        // Draw both branches: z = ±√(y²tan²A - offset²) at x = offset
+        for (const ySign of [1, -1]) { // upper and lower cone
+            c.beginPath();
+            let started2 = false;
+            for (let i = 0; i <= steps; i++) {
+                const y = ySign * (yMin + (i / steps) * (coneH - yMin));
+                const z2 = y * y * tanA * tanA - offset * offset;
+                if (z2 < 0) continue;
+                const z = Math.sqrt(z2);
+                const p = project(offset, y, z);
+                if (!started2) { c.moveTo(p.x, p.y); started2 = true; }
+                else c.lineTo(p.x, p.y);
+            }
+            // Return back on -z side
+            for (let i = steps; i >= 0; i--) {
+                const y = ySign * (yMin + (i / steps) * (coneH - yMin));
+                const z2 = y * y * tanA * tanA - offset * offset;
+                if (z2 < 0) continue;
+                const z = -Math.sqrt(z2);
+                const p = project(offset, y, z);
+                c.lineTo(p.x, p.y);
+            }
+            c.closePath();
+            c.stroke();
+        }
+
+    } else {
+        // Circle / Ellipse / Parabola: tilted plane y = x·tanB + d
+        const edgeAngle = Math.PI / 2 - coneHalf;
+        let beta;
+        if (e <= 0.01) beta = 0;
+        else if (e < 1) beta = e * edgeAngle * 0.95;
+        else beta = edgeAngle; // parabola
+        const tanB = Math.tan(beta);
+        const d = 0.6;
+
+        // y = d / (1 - tanA·tanB·cosθ)
+        const product = tanA * tanB;
+        c.beginPath();
+        let started2 = false;
+        for (let i = 0; i <= steps; i++) {
+            const th = (i / steps) * Math.PI * 2;
+            const denom = 1 - product * Math.cos(th);
+            if (Math.abs(denom) < 0.01) { started2 = false; continue; }
+            const y = d / denom;
+            if (y < 0 || y > coneH) { started2 = false; continue; }
+            const r = y * tanA;
+            const p = project(r * Math.cos(th), y, r * Math.sin(th));
+            if (!started2) { c.moveTo(p.x, p.y); started2 = true; }
+            else c.lineTo(p.x, p.y);
+        }
+        c.stroke();
+    }
+
+    // Apex dot
+    const apx = project(0, 0, 0);
+    c.fillStyle = themeColor('--fg-muted');
+    c.beginPath(); c.arc(apx.x, apx.y, 3, 0, Math.PI * 2); c.fill();
+
+    // Label
+    let label;
+    if (isCircle(e)) label = 'Kružnica — rovina ⊥ na os';
+    else if (isEllipse(e)) label = 'Elipsa — šikmý rez';
+    else if (isParabola(e)) label = 'Parabola — rovnobežne s hranou';
+    else label = 'Hyperbola — zvislá rovina cez oba kužele';
+    document.getElementById('coneLabel').textContent = label;
+}
+
+// ========================================
+// CHALLENGES
+// ========================================
+const challenges = [
+    { text: 'Nastav <span style="color:#34d399">e = 0</span> — nájdi kružnicu', check: () => isCircle(ecc) },
+    { text: 'Nastav slider tak, aby bola <span style="color:#34d399">elipsa</span>', check: () => isEllipse(ecc) },
+    { text: 'Nájdi <span style="color:#34d399">parabolu</span> (e = 1)', check: () => isParabola(ecc) },
+    { text: 'Nastav <span style="color:#34d399">hyperbolu</span> (e > 1)', check: () => isHyperbola(ecc) },
+    { text: 'Nastav e ≈ 0.02 — obežná dráha Zeme', check: () => ecc >= 0.01 && ecc <= 0.03 },
+    { text: 'Nájdi elipsu kde <span style="color:#fbbf24">súčet vzdialeností</span> k ohnískom ≈ 3.0', check: () => {
+        if (!isEllipse(ecc)) return false;
+        const aH = L / (1 - ecc * ecc);
+        return Math.abs(2 * aH - 3.0) < 0.3;
+    }},
+    { text: 'Ťahaj bod P po <span style="color:#34d399">parabole</span> a over, že d(P,F) = d(P,r)', check: () => isParabola(ecc) },
+    { text: 'Pri hyperbole klikni na <strong>ľavú</strong> vetvu', check: () => isHyperbola(ecc) && pointBranch === -1 },
+    { text: 'Nastav e ≈ 0.97 — veľmi sploštená elipsa', check: () => ecc >= 0.95 && ecc <= 0.98 },
+    { text: 'Nastav e = 1.50 a pozri obe vetvy hyperboly', check: () => ecc >= 1.48 && ecc <= 1.52 },
+];
+
+let currentChallenge = 0;
+let challengeSolved = false;
+
+function showChallenge() {
+    challengeSolved = false;
+    document.getElementById('challengeText').innerHTML = challenges[currentChallenge].text;
+    document.getElementById('challengeResult').classList.remove('solved');
+}
+
+function checkChallenge() {
+    if (challengeSolved) return;
+    if (challenges[currentChallenge].check()) {
+        challengeSolved = true;
+        document.getElementById('challengeResult').classList.add('solved');
+    }
+}
+
+document.getElementById('btnNextChallenge').addEventListener('click', () => {
+    currentChallenge = (currentChallenge + 1) % challenges.length;
+    showChallenge();
+});
+
+// ========================================
+// INIT
+// ========================================
+showLesson(0);
+showChallenge();
+render();
+</script>
+
+</body>
+</html>

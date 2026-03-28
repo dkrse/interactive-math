@@ -1,30 +1,45 @@
-# Trigonometry — Understand it visually
+# Interactive Math — Understand it visually
 
-An interactive web application for learning and truly understanding trigonometry through visual exploration.
+Interactive web applications for learning and truly understanding math through visual exploration. No build tools, no dependencies — just open in a browser.
 
-## Why this exists
+## Trigonometry
 
-Most people learn trigonometry by memorizing formulas without understanding where they come from. This app fixes that by letting you **drag a point around the unit circle** and see everything connected in real time:
+Most people memorize trig formulas without understanding where they come from. Drag a point around the unit circle and see everything connected in real time.
 
-- **Unit circle** with a live right triangle showing sin, cos, and the hypotenuse
-- **Real-time values** of angle, radians, sin, cos, and tan
-- **Wave visualization** showing how sin/cos waves emerge from circular motion
-- **Pythagorean identity** (sin² + cos² = 1) computed live with actual values
-- **Snap to notable angles** (0°, 30°, 45°, 60°, 90°, ...) with markers on the circle
-- **Interactive challenges** — "find the angle where sin = 0.5", etc.
-- **Step-by-step lessons** from circle → triangle → sin/cos → radians → waves → tan → quadrants
-- **Light/dark mode** toggle
-- **Touch support** for mobile devices
+- **Unit circle** with live right triangle (sin, cos, hypotenuse)
+- **Wave visualization** — see how sin/cos waves emerge from circular motion
+- **Pythagorean identity** sin² + cos² = 1 computed live
+- **Snap to notable angles** (0°, 30°, 45°, 60°, 90°, ...) with markers
+- **Interactive challenges** — "find the angle where sin = 0.5"
+- **7 step-by-step lessons**
 
-## Usage
+## Conic Sections
 
-Open one of the HTML files in a browser — no build tools or dependencies needed.
+People learn circle, ellipse, parabola, and hyperbola as 4 separate things. They're actually one family controlled by a single number — eccentricity.
 
-| File | Language |
-|------|----------|
-| `src/trig_sk.html` | Slovak |
-| `src/trig_en.html` | English |
+- **Eccentricity slider** (0 → 2) — watch the curve morph smoothly
+- **3D double cone** with the intersection curve rendered on the cone surface — circle, ellipse, parabola, or hyperbola depending on the cutting plane
+- **Draggable point** with live distance measurements to foci and directrix
+- **Focus-directrix ratio** verified in real time (always equals e)
+- **Ellipse sum / Hyperbola difference** of distances — proven live
+- **Interactive challenges** — "find Earth's orbit eccentricity", "click the left branch"
+- **7 step-by-step lessons**
+
+## Files
+
+| File | Topic | Language |
+|------|-------|----------|
+| `src/trig_sk.html` | Trigonometry | Slovak |
+| `src/trig_en.html` | Trigonometry | English |
+| `src/conics_sk.html` | Conic Sections | Slovak |
+| `src/conics_en.html` | Conic Sections | English |
+
+All files include light/dark mode toggle and touch support for mobile.
+
+## Author
+
+krse
 
 ## License
 
-[MIT](LICENSE) — krse
+[MIT](LICENSE)
