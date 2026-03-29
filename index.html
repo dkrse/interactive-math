@@ -185,6 +185,7 @@ canvas{display:block;border-radius:8px}
 <div class="ch-title" data-i18n="challenge">Výzva</div>
 <div id="t_chText"></div>
 <div class="ch-result" id="t_chResult" data-i18n="correct">Spr��vne!</div>
+<button class="ch-next" id="t_chSolve" data-i18n="show_solution">Ukázať riešenie</button>
 <button class="ch-next" id="t_chNext" data-i18n="next_challenge">Ďalšia výzva</button>
 </div>
 </div>
@@ -247,6 +248,7 @@ canvas{display:block;border-radius:8px}
 <div class="ch-title" data-i18n="challenge">Výzva</div>
 <div id="c_chText"></div>
 <div class="ch-result" id="c_chResult" data-i18n="correct">Správne!</div>
+<button class="ch-next" id="c_chSolve" data-i18n="show_solution">Ukázať riešenie</button>
 <button class="ch-next" id="c_chNext" data-i18n="next_challenge">Ďalšia výzva</button>
 </div>
 <div class="explanation" id="c_explain"></div>
@@ -304,6 +306,7 @@ canvas{display:block;border-radius:8px}
 <div class="ch-title" data-i18n="challenge">Výzva</div>
 <div id="x_chText"></div>
 <div class="ch-result" id="x_chResult" data-i18n="correct">Správne!</div>
+<button class="ch-next" id="x_chSolve" data-i18n="show_solution">Ukázať riešenie</button>
 <button class="ch-next" id="x_chNext" data-i18n="next_challenge">Ďalšia výzva</button>
 </div>
 </div>
@@ -354,7 +357,7 @@ const I = {
 sk: {
 title:'MATEMATIKA', subtitle:'Pochop to vizuálne',
 tab_trig:'Trigonometria', tab_conics:'Kužeľosečky', tab_complex:'Komplexné čísla',
-challenge:'Výzva', correct:'Správne!', next_challenge:'Ďalšia výzva',
+challenge:'Výzva', correct:'Správne!', next_challenge:'Ďalšia výzva', show_solution:'Ukázať riešenie',
 // Trig
 trig_circle_title:'Jednotková kružnica', trig_wave_title:'Vlna — sin a cos vznikajú z kruhového pohybu',
 trig_values_title:'Aktuálne hodnoty', trig_lesson_title:'Pochop krok za krokom',
@@ -389,7 +392,7 @@ cpx_power_title:'Umocňovanie — z<sup>n</sup>',
 en: {
 title:'MATHEMATICS', subtitle:'Understand it visually',
 tab_trig:'Trigonometry', tab_conics:'Conic Sections', tab_complex:'Complex Numbers',
-challenge:'Challenge', correct:'Correct!', next_challenge:'Next challenge',
+challenge:'Challenge', correct:'Correct!', next_challenge:'Next challenge', show_solution:'Show solution',
 trig_circle_title:'Unit circle', trig_wave_title:'Wave — sin and cos come from circular motion',
 trig_values_title:'Current values', trig_lesson_title:'Understand step by step',
 trig_angle:'Angle', trig_radians:'Radians',
@@ -634,6 +637,15 @@ function trigBuildSteps() {
 }
 
 // Trig challenges
+const trigSolves = [
+()=>{t_angle=30*Math.PI/180;},  // sin=0.5 → 30°
+()=>{t_angle=90*Math.PI/180;},  // cos=0 → 90°
+()=>{t_angle=45*Math.PI/180;},  // sin=cos → 45°
+()=>{t_angle=45*Math.PI/180;},  // tan=1 → 45°
+()=>{t_angle=225*Math.PI/180;}, // III. quadrant → 225°
+()=>{t_angle=270*Math.PI/180;}, // sin=−1 → 270°
+()=>{t_angle=60*Math.PI/180;},  // cos=0.5 → 60°
+];
 const trigChallenges = {
 sk:[
 {text:'Nájdi uhol, kde <span class="sin-c">sin = 0.5</span>',check:()=>Math.abs(Math.sin(t_angle)-.5)<.05},
@@ -656,6 +668,7 @@ en:[
 let trigChIdx=0, trigChSolved=false;
 function trigShowChallenge(){trigChSolved=false;$('t_chText').innerHTML=trigChallenges[currentLang][trigChIdx].text;$('t_chResult').classList.remove('solved');}
 function trigCheckChallenge(){if(trigChSolved)return;if(trigChallenges[currentLang][trigChIdx].check()){trigChSolved=true;$('t_chResult').classList.add('solved');}}
+$('t_chSolve').addEventListener('click',()=>{trigSolves[trigChIdx]();if(t_animating)t_stopAnim();trigRender();});
 $('t_chNext').addEventListener('click',()=>{trigChIdx=(trigChIdx+1)%trigChallenges[currentLang].length;trigShowChallenge();});
 
 // ============================================================
@@ -803,6 +816,14 @@ function conBuildSteps(){
     $('c_steps').innerHTML=n[currentLang].map((nm,i)=>`<button class="step-btn${i===conCurrentStep?' active':''}" onclick="conShowLesson(${i})">${nm}</button>`).join('');
 }
 
+function c_setEcc(v){c_ecc=v;$('c_eccSlider').value=Math.round(v*100);}
+const conSolves=[
+()=>{c_setEcc(0);},      // circle
+()=>{c_setEcc(0.5);},    // ellipse
+()=>{c_setEcc(1.0);},    // parabola
+()=>{c_setEcc(1.5);},    // hyperbola
+()=>{c_setEcc(0.02);},   // Earth
+];
 const conChallenges={sk:[
 {text:'Nastav <span class="c-curve">e = 0</span> — nájdi kružnicu',check:()=>c_isC(c_ecc)},
 {text:'Nastav slider tak, aby bola <span class="c-curve">elipsa</span>',check:()=>c_isE(c_ecc)},
@@ -819,6 +840,7 @@ const conChallenges={sk:[
 let conChIdx=0,conChSolved=false;
 function conShowChallenge(){conChSolved=false;$('c_chText').innerHTML=conChallenges[currentLang][conChIdx].text;$('c_chResult').classList.remove('solved');}
 function conCheckChallenge(){if(conChSolved)return;if(conChallenges[currentLang][conChIdx].check()){conChSolved=true;$('c_chResult').classList.add('solved');}}
+$('c_chSolve').addEventListener('click',()=>{conSolves[conChIdx]();conRender();});
 $('c_chNext').addEventListener('click',()=>{conChIdx=(conChIdx+1)%conChallenges[currentLang].length;conShowChallenge();});
 
 // ============================================================
@@ -979,6 +1001,13 @@ function cpxBuildSteps(){
     $('x_steps').innerHTML=n[currentLang].map((nm,i)=>`<button class="step-btn${i===cpxCurrentStep?' active':''}" onclick="cpxShowLesson(${i})">${nm}</button>`).join('');
 }
 
+const cpxSolves=[
+()=>{xZr=2;xZi=0;},                                          // z=2+0i
+()=>{xZr=0;xZi=1;},                                          // z=i
+()=>{xWm=1;xWa=Math.PI/2;xSyncSl();},                       // w=i
+()=>{xZr=2;xZi=0;},                                          // |z|=2
+()=>{xZr=0;xZi=1;$('x_slN').value=4;$('x_slNVal').textContent='4';}, // z=i, n=4
+];
 const cpxChallenges={sk:[
 {text:'Posuň <span class="color-z">z</span> na <span class="color-re">2 + 0i</span>',check:()=>Math.abs(xZr-2)<.15&&Math.abs(xZi)<.15},
 {text:'Posuň <span class="color-z">z</span> na <span class="color-im">i</span>',check:()=>Math.abs(xZr)<.15&&Math.abs(xZi-1)<.15},
@@ -995,6 +1024,7 @@ const cpxChallenges={sk:[
 let cpxChIdx=0,cpxChSolved=false;
 function cpxShowChallenge(){cpxChSolved=false;$('x_chText').innerHTML=cpxChallenges[currentLang][cpxChIdx].text;$('x_chResult').classList.remove('solved');}
 function cpxCheckChallenge(){if(cpxChSolved)return;if(cpxChallenges[currentLang][cpxChIdx].check()){cpxChSolved=true;$('x_chResult').classList.add('solved');}}
+$('x_chSolve').addEventListener('click',()=>{cpxSolves[cpxChIdx]();if(x_anim)x_stopA();cpxRender();});
 $('x_chNext').addEventListener('click',()=>{cpxChIdx=(cpxChIdx+1)%cpxChallenges[currentLang].length;cpxShowChallenge();});
 
 // ============================================================
