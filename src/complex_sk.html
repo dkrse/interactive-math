@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Komplexné čísla — Pochop to vizuálne</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0e17; --fg: #e0e0e0; --fg-dim: #8892a8; --fg-muted: #556;
+            --panel-bg: #111827; --panel-border: #1e293b;
+            --input-bg: #1a2535; --input-border: #2a3a4a;
+            --row-bg: #1a1a2e; --explain-bg: #0f172a;
+            --grid: #1a2535; --axis: #2a3a4a; --axis-label: #445;
+            --accent: #c084fc;
+        }
+
+        :root.light {
+            --bg: #f0f2f5; --fg: #1a1a2e; --fg-dim: #555; --fg-muted: #999;
+            --panel-bg: #ffffff; --panel-border: #d0d5dd;
+            --input-bg: #e8ecf1; --input-border: #bcc3cf;
+            --row-bg: #f0f2fa; --explain-bg: #f7f8fb;
+            --grid: #e0e4ea; --axis: #bbb; --axis-label: #888;
+            --accent: #9333ea;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg); color: var(--fg);
+            min-height: 100vh; overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        header { text-align: center; padding: 20px 20px 10px; position: relative; }
+        header h1 { font-size: 1.6rem; font-weight: 300; color: #c084fc; letter-spacing: 2px; }
+        header p { font-size: 0.85rem; color: var(--fg-muted); margin-top: 4px; }
+
+        #btnTheme {
+            position: absolute; top: 16px; right: 20px;
+            padding: 6px 12px; border: 1px solid var(--input-border);
+            background: var(--input-bg); color: var(--fg-dim);
+            border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+        }
+        #btnTheme:hover { opacity: 0.8; }
+
+        .main-container {
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 20px; padding: 10px 20px 20px;
+            max-width: 1400px; margin: 0 auto;
+        }
+
+        .panel {
+            background: var(--panel-bg); border-radius: 12px;
+            border: 1px solid var(--panel-border); padding: 16px;
+        }
+        .panel h2 {
+            font-size: 0.8rem; text-transform: uppercase;
+            letter-spacing: 1.5px; color: #7a4aaa; margin-bottom: 10px;
+        }
+
+        /* Canvas */
+        .canvas-panel { width: 100%; }
+        #mainCanvas { display: block; cursor: grab; border-radius: 8px; }
+        #mainCanvas:active { cursor: grabbing; }
+
+        /* Values */
+        .values-panel { width: 100%; }
+        .values-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .val-group { min-width: 0; }
+        .value-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; border-radius: 8px; margin-bottom: 5px;
+            font-family: 'Courier New', monospace; font-size: 0.85rem;
+            background: var(--row-bg);
+        }
+        .value-row .label { font-weight: 700; }
+        .value-row .num { font-size: 1rem; }
+
+        .color-z { color: #c084fc; }
+        .color-w { color: #34d399; }
+        .color-product { color: #f59e0b; }
+        .color-re { color: #60a5fa; }
+        .color-im { color: #f87171; }
+        .color-mag { color: #fbbf24; }
+        .color-arg { color: #a78bfa; }
+
+        :root.light .color-z { color: #9333ea; }
+        :root.light .color-w { color: #059669; }
+        :root.light .color-product { color: #d97706; }
+        :root.light .color-re { color: #2563eb; }
+        :root.light .color-im { color: #dc2626; }
+        :root.light .color-mag { color: #b45309; }
+        :root.light .color-arg { color: #7c3aed; }
+
+        .section-label {
+            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--fg-muted); margin: 10px 0 4px; padding-left: 4px;
+        }
+
+        .explanation {
+            margin-top: 14px; padding: 12px;
+            background: var(--explain-bg); border-radius: 8px;
+            font-size: 0.78rem; line-height: 1.6; color: var(--fg-dim);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center;
+        }
+        .btn {
+            padding: 6px 14px; border: 1px solid var(--input-border);
+            background: var(--input-bg); color: #c084fc;
+            border-radius: 6px; cursor: pointer; font-size: 0.75rem; transition: background 0.2s;
+        }
+        .btn:hover { opacity: 0.8; }
+        .btn.active { background: #2a2a5a; border-color: #c084fc; }
+
+        .controls label {
+            font-size: 0.75rem; color: var(--fg-muted);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .controls input[type="checkbox"] { accent-color: #c084fc; }
+
+        /* Slider */
+        .slider-box {
+            margin-top: 12px; padding: 10px 12px;
+            background: var(--explain-bg); border-radius: 8px;
+        }
+        .slider-box label {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.85rem; color: var(--fg-dim);
+        }
+        .slider-box input[type="range"] { flex: 1; accent-color: #c084fc; }
+        .slider-val { color: #c084fc; font-weight: 700; font-size: 1.1rem; min-width: 50px; text-align: right; }
+
+        /* Multiplication result panel */
+        .mult-panel { width: 100%; }
+        .mult-row {
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            padding: 10px 12px; background: var(--explain-bg); border-radius: 8px;
+            font-family: 'Courier New', monospace; font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        /* Challenge */
+        .challenge-box {
+            margin-top: 10px; padding: 10px 12px;
+            background: var(--row-bg); border: 1px solid var(--input-border);
+            border-radius: 8px; font-size: 0.78rem; line-height: 1.6;
+        }
+        .challenge-box .challenge-title {
+            color: #fbbf24; font-weight: 700; font-size: 0.7rem;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+        }
+        .challenge-box .challenge-text { color: var(--fg); }
+        .challenge-box .challenge-result {
+            color: #34d399; font-weight: 600; margin-top: 4px;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .challenge-box .challenge-result.solved { opacity: 1; }
+        .challenge-box .btn-next {
+            margin-top: 6px; padding: 4px 10px;
+            border: 1px solid var(--input-border); background: var(--input-bg);
+            color: #c084fc; border-radius: 4px; cursor: pointer; font-size: 0.7rem;
+        }
+        .challenge-box .btn-next:hover { opacity: 0.8; }
+
+        /* Lesson */
+        .lesson-panel { width: 100%; }
+        .steps { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .step-btn {
+            padding: 8px 16px; border: 1px solid var(--input-border);
+            background: var(--input-bg); color: var(--fg-dim);
+            border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+        }
+        .step-btn:hover { opacity: 0.8; }
+        .step-btn.active { background: #2a1a4f; border-color: #c084fc; color: #e0e0e0; }
+        :root.light .step-btn.active { background: #ede9fe; border-color: #9333ea; color: #1e1a3f; }
+
+        .lesson-content {
+            padding: 16px; background: var(--explain-bg); border-radius: 8px;
+            font-size: 0.88rem; line-height: 1.8; color: var(--fg-dim); min-height: 80px;
+        }
+        .lesson-content strong { color: #c084fc; }
+        .lesson-content .z-c { color: #c084fc; font-weight: 600; }
+        .lesson-content .w-c { color: #34d399; font-weight: 600; }
+        .lesson-content .re-c { color: #60a5fa; font-weight: 600; }
+        .lesson-content .im-c { color: #f87171; font-weight: 600; }
+        .lesson-content .product-c { color: #f59e0b; font-weight: 600; }
+
+        /* Power panel */
+        .power-panel { width: 100%; }
+        #powerCanvas { display: block; border-radius: 8px; }
+        .power-info {
+            margin-top: 10px; padding: 10px 12px;
+            background: var(--explain-bg); border-radius: 8px;
+            font-family: 'Courier New', monospace; font-size: 0.85rem;
+            line-height: 1.8; color: var(--fg-dim);
+            max-height: 140px; overflow-y: auto;
+        }
+        .power-info .pw-step { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .power-info .pw-label { color: #c084fc; min-width: 30px; font-weight: 700; }
+        .power-info .pw-val { color: var(--fg); }
+        .power-info .pw-polar { color: var(--fg-muted); font-size: 0.75rem; }
+        .power-colors { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; font-size: 0.75rem; color: var(--fg-muted); }
+        .power-colors .pc-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .values-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>KOMPLEXNÉ ČÍSLA</h1>
+    <p>Ťahaj body v komplexnej rovine. Pozoruj. Pochop.</p>
+    <button id="btnTheme" onclick="toggleTheme()">Svetlý režim</button>
+</header>
+
+<div class="main-container">
+
+    <!-- COMPLEX PLANE -->
+    <div class="panel canvas-panel">
+        <h2>Komplexná rovina</h2>
+        <canvas id="mainCanvas"></canvas>
+        <div class="controls">
+            <label><input type="checkbox" id="showUnitCircle" checked> Jednotková kružnica</label>
+            <label><input type="checkbox" id="showProduct" checked> <span style="color:#f59e0b">Súčin z·w</span></label>
+            <label><input type="checkbox" id="showConjugate"> <span style="color:#fb7185">Konjugát z̄</span></label>
+            <button class="btn" id="btnAnimate">▶ Rotovať</button>
+            <button class="btn" id="btnReset">Reset</button>
+        </div>
+    </div>
+
+    <!-- VALUES -->
+    <div class="panel values-panel">
+        <h2>Hodnoty</h2>
+        <div class="values-grid">
+            <div class="val-group">
+                <div class="section-label color-z">z (fialový bod)</div>
+                <div class="value-row">
+                    <span class="label color-z">z</span>
+                    <span class="num color-z" id="valZ">1 + i</span>
+                </div>
+                <div class="value-row">
+                    <span class="label color-mag">|z|</span>
+                    <span class="num color-mag" id="valMagZ">1.414</span>
+                </div>
+                <div class="value-row">
+                    <span class="label color-arg">arg(z)</span>
+                    <span class="num color-arg" id="valArgZ">45°</span>
+                </div>
+            </div>
+            <div class="val-group">
+                <div class="section-label color-w">w (zelený bod)</div>
+                <div class="value-row">
+                    <span class="label color-w">w</span>
+                    <span class="num color-w" id="valW">1 + 0i</span>
+                </div>
+                <div class="value-row">
+                    <span class="label color-mag">|w|</span>
+                    <span class="num color-mag" id="valMagW">1.000</span>
+                </div>
+                <div class="value-row">
+                    <span class="label color-arg">arg(w)</span>
+                    <span class="num color-arg" id="valArgW">0°</span>
+                </div>
+            </div>
+            <div class="val-group">
+                <div class="section-label color-product">z · w (oranžový bod)</div>
+                <div class="value-row">
+                    <span class="label color-product">z·w</span>
+                    <span class="num color-product" id="valProduct">1 + i</span>
+                </div>
+                <div class="value-row">
+                    <span class="label color-mag">|z·w|</span>
+                    <span class="num color-mag" id="valMagP">1.414</span>
+                </div>
+                <div class="value-row">
+                    <span class="label color-arg">arg(z·w)</span>
+                    <span class="num color-arg" id="valArgP">45°</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="explanation">
+            <strong>Násobenie</strong> = rotácia + škálovanie:<br>
+            <span class="color-mag">|z·w| = |z| · |w|</span> — veľkosti sa násobia<br>
+            <span class="color-arg">arg(z·w) = arg(z) + arg(w)</span> — uhly sa sčítajú
+        </div>
+
+        <div class="challenge-box">
+            <div class="challenge-title">Výzva</div>
+            <div class="challenge-text" id="challengeText"></div>
+            <div class="challenge-result" id="challengeResult">Správne!</div>
+            <button class="btn-next" id="btnNextChallenge">Ďalšia výzva</button>
+        </div>
+    </div>
+
+    <!-- MULTIPLICATION VISUALIZATION -->
+    <div class="panel mult-panel">
+        <h2>Násobenie krok za krokom</h2>
+        <div class="mult-row" id="multExplain"></div>
+        <div class="slider-box">
+            <label>
+                <span>Uhol w:</span>
+                <input type="range" id="sliderArgW" min="0" max="360" value="0" step="1">
+                <span class="slider-val" id="sliderArgWVal">0°</span>
+            </label>
+        </div>
+        <div class="slider-box">
+            <label>
+                <span>Veľkosť w:</span>
+                <input type="range" id="sliderMagW" min="10" max="300" value="100" step="1">
+                <span class="slider-val" id="sliderMagWVal">1.00</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- POWER -->
+    <div class="panel power-panel">
+        <h2>Umocňovanie — z<sup>n</sup> = opakovaná rotácia</h2>
+        <canvas id="powerCanvas"></canvas>
+        <div class="slider-box">
+            <label>
+                <span>Exponent n:</span>
+                <input type="range" id="sliderN" min="1" max="12" value="4" step="1">
+                <span class="slider-val" id="sliderNVal">4</span>
+            </label>
+        </div>
+        <div class="power-colors" id="powerColors"></div>
+        <div class="power-info" id="powerInfo"></div>
+    </div>
+
+    <!-- LESSON -->
+    <div class="panel lesson-panel">
+        <h2>Pochop krok za krokom</h2>
+        <div class="steps">
+            <button class="step-btn active" data-step="0">1. Komplexná rovina</button>
+            <button class="step-btn" data-step="1">2. Polárny tvar</button>
+            <button class="step-btn" data-step="2">3. Násobenie</button>
+            <button class="step-btn" data-step="3">4. Rotácia</button>
+            <button class="step-btn" data-step="4">5. i ako rotácia</button>
+            <button class="step-btn" data-step="5">6. Konjugát</button>
+            <button class="step-btn" data-step="6">7. Umocňovanie</button>
+            <button class="step-btn" data-step="7">8. Eulerova formula</button>
+        </div>
+        <div class="lesson-content" id="lessonContent"></div>
+    </div>
+
+</div>
+
+<script>
+// ========================================
+// STATE
+// ========================================
+let zRe = 1, zIm = 1;       // z = 1 + i
+let wMag = 1, wArg = 0;     // w = 1 (polar form for easy slider control)
+let animating = false, animId = null;
+let isLight = false;
+let draggingZ = false, draggingW = false;
+
+function toggleTheme() {
+    isLight = !isLight;
+    document.documentElement.classList.toggle('light', isLight);
+    document.getElementById('btnTheme').textContent = isLight ? 'Tmavý režim' : 'Svetlý režim';
+    render();
+}
+
+function themeColor(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ========================================
+// LESSONS
+// ========================================
+const lessons = [
+    `<strong>Komplexné číslo = bod v 2D rovine.</strong>
+     <br>Každé komplexné číslo <span class="z-c">z = a + bi</span> má dve zložky:
+     <br>— <span class="re-c">Reálna časť (a)</span> = vzdialenosť vpravo/vľavo po osi x
+     <br>— <span class="im-c">Imaginárna časť (b)</span> = vzdialenosť hore/dole po osi y
+     <br><br>Os x sa volá „reálna os", os y sa volá „imaginárna os".
+     Komplexné čísla nie sú nič záhadné — sú to jednoducho body v rovine.
+     <br><br>➜ Ťahaj <span class="z-c">fialový bod z</span> a sleduj, ako sa menia súradnice.`,
+
+    `<strong>Polárny tvar: veľkosť + uhol.</strong>
+     <br>Každé komplexné číslo možno zapísať dvoma spôsobmi:
+     <br>— Kartézsky: <span class="z-c">z = a + bi</span> (súradnice)
+     <br>— Polárny: <span class="z-c">z = r · (cos θ + i sin θ)</span> (veľkosť a uhol)
+     <br><br><span class="color-mag">|z| = r = √(a² + b²)</span> — vzdialenosť od počiatku (veľkosť/modul)
+     <br><span class="color-arg">arg(z) = θ = arctan(b/a)</span> — uhol od osi x (argument)
+     <br><br>Je to presne to isté ako vzťah medzi kartézskymi a polárnymi súradnicami!
+     Reálna časť = r·cos θ, imaginárna = r·sin θ. Presne ako na jednotkovej kružnici.
+     <br><br>➜ Ťahaj <span class="z-c">z</span> po kruhu a sleduj ako sa mení uhol ale veľkosť zostáva rovnaká.`,
+
+    `<strong>Násobenie = rotácia + škálovanie.</strong>
+     <br>Keď násobíš <span class="z-c">z</span> · <span class="w-c">w</span>, výsledok <span class="product-c">z·w</span> má:
+     <br>— <strong>Veľkosť</strong>: |z·w| = |z| · |w| — veľkosti sa <em>násobia</em>
+     <br>— <strong>Uhol</strong>: arg(z·w) = arg(z) + arg(w) — uhly sa <em>sčítajú</em>
+     <br><br>Toto je kľúčová vlastnosť! Násobenie komplexným číslom = geometrická operácia.
+     <br><br>➜ Použi slidery dole na zmenu <span class="w-c">w</span>. Meň uhol a pozoruj rotáciu. Meň veľkosť a pozoruj škálovanie.`,
+
+    `<strong>Násobenie číslom na jednotkovej kružnici = čistá rotácia.</strong>
+     <br>Ak <span class="w-c">|w| = 1</span>, tak násobenie nemení veľkosť — len otočí.
+     <br><br>Príklad: <span class="w-c">w = cos 90° + i sin 90° = i</span>
+     <br>Násobenie číslom <span class="w-c">i</span> otočí bod o 90° proti smeru hodinových ručičiek.
+     <br><br>Nastav slider veľkosti w na 1.00 a meň uhol — <span class="z-c">z</span> sa bude čisto otáčať.
+     <br><br>➜ Nastav uhol w na 90° a pozoruj: bod sa otočí o 90°. Nastav 180° — otočí sa o 180° (to je násobenie číslom −1).`,
+
+    `<strong>i² = −1 dáva geometrický zmysel.</strong>
+     <br>Násobenie číslom <span class="w-c">i</span> = rotácia o 90°.
+     <br>Násobenie dvakrát: i · i = i² = rotácia o 180° = násobenie číslom −1.
+     <br><br>Preto <strong>i² = −1</strong>. Nie je to definícia z ničoho — je to dôsledok toho, že dve rotácie o 90° = rotácia o 180°.
+     <br><br>Pokračujeme: i³ = −i (rotácia o 270°), i⁴ = 1 (rotácia o 360° = späť na začiatok).
+     <br><br>➜ Nastav z = 1 (bod na osi x) a opakovane nastav uhol w na 90° — každé násobenie otočí o ďalších 90°.`,
+
+    `<strong>Konjugát z̄ = zrkadlový obraz cez os x.</strong>
+     <br>Ak <span class="z-c">z = a + bi</span>, potom konjugát <span style="color:#fb7185">z̄ = a − bi</span>.
+     <br><br>Geometricky: prevrátiš znamienko imaginárnej časti = zrkadlíš cez reálnu os.
+     <br><br>Dôležité vlastnosti:
+     <br>— z · z̄ = |z|² (reálne číslo!)
+     <br>— |z̄| = |z| (rovnaká veľkosť)
+     <br>— arg(z̄) = −arg(z) (opačný uhol)
+     <br><br>➜ Zapni „Konjugát z̄" v kontrolách a ťahaj <span class="z-c">z</span> — ružový bod je vždy zrkadlo.`,
+
+    `<strong>Umocňovanie = opakovaná rotácia + škálovanie.</strong>
+     <br><br>Keď počítaš <span class="z-c">z⁸</span>, nemusíš roznasobovať 8-krát. Stačí použiť polárny tvar:
+     <br><br><strong>z = r · e^(iθ)</strong> &nbsp;&rarr;&nbsp; <strong>zⁿ = rⁿ · e^(inθ)</strong>
+     <br><br>To znamená:
+     <br>— <span style="color:#fbbf24">Veľkosť sa umocní:</span> |zⁿ| = |z|ⁿ
+     <br>— <span style="color:#a78bfa">Uhol sa vynásobí:</span> arg(zⁿ) = n · arg(z)
+     <br><br>Príklad: ak z = 1 + i (veľkosť √2, uhol 45°), tak z⁸ má veľkosť (√2)⁸ = 16 a uhol 8 · 45° = 360° = 0°.
+     <br>Výsledok: z⁸ = 16. Reálne číslo! Bez jediného roznasobovania.
+     <br><br>Dole vidíš všetky mocniny z¹, z², ..., zⁿ — sleduj, ako sa bod otáča a zväčšuje/zmenšuje.
+     <br><br>➜ Nastav z na jednotkovú kružnicu (|z| = 1) a meň exponent — bod len rotuje, veľkosť sa nemení. Skús z = i a sleduj i¹, i², i³, i⁴.`,
+
+    `<strong>Eulerova formula: e^(iθ) = cos θ + i sin θ</strong>
+     <br><br>Toto je najkrajší vzťah v matematike. Spája exponenciálu s trigonometriou.
+     <br><br>e^(iθ) je bod na jednotkovej kružnici pod uhlom θ.
+     Preto polárny tvar z = r · e^(iθ) — veľkosť krát „smer".
+     <br><br>A násobenie: r₁e^(iθ₁) · r₂e^(iθ₂) = r₁r₂ · e^(i(θ₁+θ₂))
+     <br>Veľkosti sa násobia, uhly sa sčítajú — presne to, čo vidíš na plátne!
+     <br><br>Špeciálny prípad: <strong>e^(iπ) = −1</strong> (Eulerova identita) — rotácia o π = bod [−1, 0].
+     <br><br>➜ Nastav z na jednotkovú kružnicu a predstav si, že ťaháš e^(iθ) po rôznych uhloch θ.`
+];
+
+// ========================================
+// CHALLENGES
+// ========================================
+const challenges = [
+    { text: 'Posuň <span class="color-z">z</span> na číslo <span class="color-re">2 + 0i</span> (reálne číslo 2)', check: () => Math.abs(zRe - 2) < 0.15 && Math.abs(zIm) < 0.15 },
+    { text: 'Posuň <span class="color-z">z</span> na číslo <span class="color-im">i</span> (čisto imaginárne)', check: () => Math.abs(zRe) < 0.15 && Math.abs(zIm - 1) < 0.15 },
+    { text: 'Nastav <span class="color-w">w</span> tak, aby <span class="color-product">z·w</span> bolo reálne číslo', check: () => { const p = multiply(); return Math.abs(p.im) < 0.1 && Math.abs(p.re) > 0.2; } },
+    { text: 'Nastav <span class="color-w">w = i</span> (uhol 90°, veľkosť 1)', check: () => Math.abs(wMag - 1) < 0.1 && Math.abs(wArg - Math.PI/2) < 0.1 },
+    { text: 'Nájdi z kde <span class="color-mag">|z| = 2</span>', check: () => Math.abs(Math.sqrt(zRe*zRe + zIm*zIm) - 2) < 0.15 },
+    { text: 'Nastav w tak, aby z·w otočilo z o 180°', check: () => { const p = multiply(); const magZ = Math.sqrt(zRe*zRe+zIm*zIm); return magZ > 0.3 && Math.abs(p.re + zRe*wMag) < 0.2 && Math.abs(p.im + zIm*wMag) < 0.2; } },
+    { text: 'Nájdi z na jednotkovej kružnici v II. kvadrante', check: () => { const mag = Math.sqrt(zRe*zRe+zIm*zIm); return Math.abs(mag - 1) < 0.15 && zRe < -0.1 && zIm > 0.1; } },
+    { text: 'Nastav w tak, aby <span class="color-mag">|z·w| = |z|</span> (čistá rotácia)', check: () => Math.abs(wMag - 1) < 0.08 && Math.abs(wArg) > 0.1 },
+    { text: 'Nastav z = i a exponent na 4 — aký je výsledok i⁴?', check: () => { const p = computePower(zRe, zIm, parseInt(document.getElementById('sliderN').value)); return Math.abs(zRe) < 0.15 && Math.abs(zIm - 1) < 0.15 && parseInt(document.getElementById('sliderN').value) === 4 && Math.abs(p.re - 1) < 0.15 && Math.abs(p.im) < 0.15; } },
+    { text: 'Nájdi z na jednotkovej kružnici kde z⁸ = 1 (uhol 45°)', check: () => { const mag = Math.sqrt(zRe*zRe+zIm*zIm); const n = parseInt(document.getElementById('sliderN').value); const p = computePower(zRe, zIm, n); return n === 8 && Math.abs(mag - 1) < 0.15 && Math.abs(p.re - 1) < 0.2 && Math.abs(p.im) < 0.2; } },
+];
+
+let currentChallenge = 0, challengeSolved = false;
+
+function showChallenge() {
+    challengeSolved = false;
+    document.getElementById('challengeText').innerHTML = challenges[currentChallenge].text;
+    document.getElementById('challengeResult').classList.remove('solved');
+}
+
+function checkChallenge() {
+    if (challengeSolved) return;
+    if (challenges[currentChallenge].check()) {
+        challengeSolved = true;
+        document.getElementById('challengeResult').classList.add('solved');
+    }
+}
+
+document.getElementById('btnNextChallenge').addEventListener('click', () => {
+    currentChallenge = (currentChallenge + 1) % challenges.length;
+    showChallenge();
+});
+
+// ========================================
+// MATH HELPERS
+// ========================================
+function wRe() { return wMag * Math.cos(wArg); }
+function wIm() { return wMag * Math.sin(wArg); }
+
+function multiply() {
+    const re = zRe * wRe() - zIm * wIm();
+    const im = zRe * wIm() + zIm * wRe();
+    return { re, im };
+}
+
+function formatComplex(re, im) {
+    const r = Math.abs(re) < 0.005 ? 0 : Math.round(re * 100) / 100;
+    const i = Math.abs(im) < 0.005 ? 0 : Math.round(im * 100) / 100;
+    if (i === 0) return r.toFixed(2);
+    if (r === 0) return (i === 1 ? '' : i === -1 ? '−' : i.toFixed(2)) + 'i';
+    const sign = i > 0 ? ' + ' : ' − ';
+    const absI = Math.abs(i);
+    return r.toFixed(2) + sign + (absI === 1 ? '' : absI.toFixed(2)) + 'i';
+}
+
+function toDeg(rad) { return ((rad * 180 / Math.PI) % 360 + 360) % 360; }
+
+// ========================================
+// CANVAS SETUP (dynamic sizing)
+// ========================================
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+
+let CW, CH, CX, CY, SCALE;
+
+function setupHiDPI(c, ct, w, h) {
+    const dpr = window.devicePixelRatio || 1;
+    c.width = w * dpr; c.height = h * dpr;
+    c.style.width = w + 'px'; c.style.height = h + 'px';
+    ct.setTransform(1, 0, 0, 1, 0, 0);
+    ct.scale(dpr, dpr);
+}
+
+function resizeMainCanvas() {
+    const container = canvas.parentElement;
+    const w = container.clientWidth - 32; // padding
+    CW = Math.max(300, w);
+    CH = Math.max(300, Math.min(CW, Math.round(window.innerHeight * 0.65)));
+    CX = CW / 2; CY = CH / 2;
+    SCALE = Math.min(CW, CH) / 5.6;
+    setupHiDPI(canvas, ctx, CW, CH);
+}
+
+// ========================================
+// DRAWING
+// ========================================
+function toScreen(re, im) { return [CX + re * SCALE, CY - im * SCALE]; }
+
+function drawMain() {
+    ctx.clearRect(0, 0, CW, CH);
+
+    // Grid
+    const maxRe = Math.floor(CX / SCALE);
+    const maxIm = Math.floor(CY / SCALE);
+    ctx.strokeStyle = themeColor('--grid');
+    ctx.lineWidth = 1;
+    for (let i = -maxRe; i <= maxRe; i++) {
+        if (i === 0) continue;
+        const x = CX + i * SCALE;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke();
+    }
+    for (let i = -maxIm; i <= maxIm; i++) {
+        if (i === 0) continue;
+        const y = CY - i * SCALE;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+    }
+
+    // Axes
+    ctx.strokeStyle = themeColor('--axis');
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, CY); ctx.lineTo(CW, CY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CX, 0); ctx.lineTo(CX, CH); ctx.stroke();
+
+    // Axis labels
+    ctx.fillStyle = themeColor('--axis-label');
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    for (let i = -maxRe; i <= maxRe; i++) {
+        if (i === 0) continue;
+        const x = CX + i * SCALE;
+        if (x > 20 && x < CW - 20) ctx.fillText(i, x, CY + 16);
+    }
+    for (let i = -maxIm; i <= maxIm; i++) {
+        if (i === 0) continue;
+        const y = CY - i * SCALE;
+        if (y > 14 && y < CH - 10) ctx.fillText(i + 'i', CX - 18, y + 4);
+    }
+    ctx.fillText('Re', CW - 16, CY - 8);
+    ctx.fillText('Im', CX + 12, 14);
+
+    // Unit circle
+    if (document.getElementById('showUnitCircle').checked) {
+        ctx.strokeStyle = isLight ? '#ccc' : '#2a3a4a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(CX, CY, SCALE, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    const showProduct = document.getElementById('showProduct').checked;
+    const showConj = document.getElementById('showConjugate').checked;
+
+    // w vector (green)
+    const wR = wRe(), wI = wIm();
+    const [wx, wy] = toScreen(wR, wI);
+    ctx.strokeStyle = '#34d39988';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(wx, wy); ctx.stroke();
+
+    // z vector (purple)
+    const [zx, zy] = toScreen(zRe, zIm);
+    ctx.strokeStyle = '#c084fc88';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(zx, zy); ctx.stroke();
+
+    // product vector (orange)
+    if (showProduct) {
+        const p = multiply();
+        const [px, py] = toScreen(p.re, p.im);
+        ctx.strokeStyle = '#f59e0b66';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(px, py); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // product dot
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = isLight ? '#fff' : '#000';
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+
+        // label
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('z·w', px + 10, py - 6);
+    }
+
+    // conjugate (pink)
+    if (showConj) {
+        const [cx, cy] = toScreen(zRe, -zIm);
+        ctx.strokeStyle = '#fb718566';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(cx, cy); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#fb7185';
+        ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('z̄', cx + 10, cy - 6);
+    }
+
+    // Re/Im projections for z
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    // Re projection (blue)
+    ctx.strokeStyle = '#60a5fa55';
+    ctx.beginPath(); ctx.moveTo(zx, CY); ctx.lineTo(zx, zy); ctx.stroke();
+    // Im projection (red)
+    ctx.strokeStyle = '#f8717155';
+    ctx.beginPath(); ctx.moveTo(CX, zy); ctx.lineTo(zx, zy); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Re component line (blue solid)
+    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(zx, CY); ctx.stroke();
+
+    // Im component line (red solid)
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(zx, CY); ctx.lineTo(zx, zy); ctx.stroke();
+
+    // Angle arc for z
+    const argZ = Math.atan2(zIm, zRe);
+    if (Math.sqrt(zRe*zRe + zIm*zIm) > 0.1) {
+        ctx.strokeStyle = '#a78bfa55';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(CX, CY, 25, 0, -argZ, argZ > 0);
+        ctx.stroke();
+
+        ctx.fillStyle = '#a78bfa';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        const labelA = argZ / 2;
+        ctx.fillText(Math.round(toDeg(argZ)) + '°', CX + Math.cos(-labelA) * 38, CY + Math.sin(-labelA) * 38 + 3);
+    }
+
+    // w dot (green)
+    ctx.fillStyle = isLight ? '#333' : '#fff';
+    ctx.beginPath(); ctx.arc(wx, wy, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#34d399';
+    ctx.beginPath(); ctx.arc(wx, wy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('w', wx + 10, wy - 6);
+
+    // z dot (purple)
+    ctx.fillStyle = isLight ? '#333' : '#fff';
+    ctx.beginPath(); ctx.arc(zx, zy, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#c084fc';
+    ctx.beginPath(); ctx.arc(zx, zy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('z', zx + 10, zy - 8);
+
+    // Projection labels
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#60a5fa';
+    ctx.textAlign = 'center';
+    ctx.fillText('Re', (CX + zx) / 2, CY + (zIm >= 0 ? 14 : -6));
+    ctx.fillStyle = '#f87171';
+    ctx.textAlign = zRe >= 0 ? 'left' : 'right';
+    ctx.fillText('Im', zx + (zRe >= 0 ? 6 : -18), (CY + zy) / 2 + 3);
+}
+
+// ========================================
+// UPDATE VALUES
+// ========================================
+function updateValues() {
+    const magZ = Math.sqrt(zRe * zRe + zIm * zIm);
+    const argZ = Math.atan2(zIm, zRe);
+
+    document.getElementById('valZ').textContent = formatComplex(zRe, zIm);
+    document.getElementById('valMagZ').textContent = magZ.toFixed(3);
+    document.getElementById('valArgZ').textContent = Math.round(toDeg(argZ)) + '°';
+
+    document.getElementById('valW').textContent = formatComplex(wRe(), wIm());
+    document.getElementById('valMagW').textContent = wMag.toFixed(3);
+    document.getElementById('valArgW').textContent = Math.round(toDeg(wArg)) + '°';
+
+    const p = multiply();
+    const magP = Math.sqrt(p.re * p.re + p.im * p.im);
+    const argP = Math.atan2(p.im, p.re);
+
+    document.getElementById('valProduct').textContent = formatComplex(p.re, p.im);
+    document.getElementById('valMagP').textContent = magP.toFixed(3);
+    document.getElementById('valArgP').textContent = Math.round(toDeg(argP)) + '°';
+
+    // Multiplication explanation
+    const el = document.getElementById('multExplain');
+    el.innerHTML =
+        `<span class="color-z">${formatComplex(zRe, zIm)}</span> ` +
+        `<span style="color:var(--fg-dim)">·</span> ` +
+        `<span class="color-w">${formatComplex(wRe(), wIm())}</span> ` +
+        `<span style="color:var(--fg-dim)">=</span> ` +
+        `<span class="color-product">${formatComplex(p.re, p.im)}</span>` +
+        `<span style="color:var(--fg-dim); margin-left:20px; font-size:0.75rem;">` +
+        `|z|·|w| = ${magZ.toFixed(2)}·${wMag.toFixed(2)} = ${magP.toFixed(2)}` +
+        ` &nbsp;|&nbsp; arg(z)+arg(w) = ${Math.round(toDeg(argZ))}°+${Math.round(toDeg(wArg))}° = ${Math.round(toDeg(argP))}°</span>`;
+
+    checkChallenge();
+}
+
+function render() {
+    drawMain();
+    drawPower();
+    updateValues();
+}
+
+// ========================================
+// INTERACTION — DRAG
+// ========================================
+function getComplexFromMouse(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const re = (mx - CX) / SCALE;
+    const im = -(my - CY) / SCALE;
+    return { re, im };
+}
+
+function dist(x1, y1, x2, y2) { return Math.sqrt((x1-x2)**2 + (y1-y2)**2); }
+
+// Snap to nice values
+function snapVal(v) {
+    const nice = [0, 0.5, 1, -0.5, -1, 1.5, -1.5, 2, -2, Math.sqrt(2)/2, -Math.sqrt(2)/2, Math.sqrt(3)/2, -Math.sqrt(3)/2];
+    for (const n of nice) {
+        if (Math.abs(v - n) < 0.08) return n;
+    }
+    return v;
+}
+
+canvas.addEventListener('mousedown', e => {
+    const c = getComplexFromMouse(e);
+    const [zx, zy] = toScreen(zRe, zIm);
+    const [wx, wy] = toScreen(wRe(), wIm());
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+
+    if (dist(mx, my, zx, zy) < 20) {
+        draggingZ = true;
+    } else if (dist(mx, my, wx, wy) < 20) {
+        draggingW = true;
+    } else {
+        // click anywhere = move z
+        draggingZ = true;
+        zRe = snapVal(c.re);
+        zIm = snapVal(c.im);
+    }
+    if (animating) stopAnim();
+    render();
+});
+
+window.addEventListener('mousemove', e => {
+    if (!draggingZ && !draggingW) return;
+    const c = getComplexFromMouse(e);
+    if (draggingZ) {
+        zRe = snapVal(c.re);
+        zIm = snapVal(c.im);
+    } else if (draggingW) {
+        const r = snapVal(c.re);
+        const i = snapVal(c.im);
+        wMag = Math.sqrt(r*r + i*i);
+        wArg = Math.atan2(i, r);
+        syncSliders();
+    }
+    render();
+});
+
+window.addEventListener('mouseup', () => { draggingZ = false; draggingW = false; });
+
+// Touch
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const c = getComplexFromMouse(t);
+    const [zx, zy] = toScreen(zRe, zIm);
+    const [wx, wy] = toScreen(wRe(), wIm());
+    const rect = canvas.getBoundingClientRect();
+    const mx = t.clientX - rect.left, my = t.clientY - rect.top;
+
+    if (dist(mx, my, zx, zy) < 30) draggingZ = true;
+    else if (dist(mx, my, wx, wy) < 30) draggingW = true;
+    else { draggingZ = true; zRe = snapVal(c.re); zIm = snapVal(c.im); }
+    if (animating) stopAnim();
+    render();
+}, { passive: false });
+
+window.addEventListener('touchmove', e => {
+    if (!draggingZ && !draggingW) return;
+    const t = e.touches[0];
+    const c = getComplexFromMouse(t);
+    if (draggingZ) { zRe = snapVal(c.re); zIm = snapVal(c.im); }
+    else if (draggingW) {
+        const r = snapVal(c.re); const i = snapVal(c.im);
+        wMag = Math.sqrt(r*r + i*i); wArg = Math.atan2(i, r);
+        syncSliders();
+    }
+    render();
+}, { passive: false });
+
+window.addEventListener('touchend', () => { draggingZ = false; draggingW = false; });
+
+// ========================================
+// SLIDERS
+// ========================================
+const sliderArgW = document.getElementById('sliderArgW');
+const sliderMagW = document.getElementById('sliderMagW');
+
+function syncSliders() {
+    sliderArgW.value = Math.round(toDeg(wArg));
+    sliderMagW.value = Math.round(wMag * 100);
+    document.getElementById('sliderArgWVal').textContent = Math.round(toDeg(wArg)) + '°';
+    document.getElementById('sliderMagWVal').textContent = wMag.toFixed(2);
+}
+
+sliderArgW.addEventListener('input', () => {
+    wArg = parseFloat(sliderArgW.value) * Math.PI / 180;
+    document.getElementById('sliderArgWVal').textContent = sliderArgW.value + '°';
+    render();
+});
+
+sliderMagW.addEventListener('input', () => {
+    wMag = parseFloat(sliderMagW.value) / 100;
+    document.getElementById('sliderMagWVal').textContent = wMag.toFixed(2);
+    render();
+});
+
+// ========================================
+// ANIMATION (rotate w)
+// ========================================
+const btnAnimate = document.getElementById('btnAnimate');
+const btnReset = document.getElementById('btnReset');
+
+function startAnim() {
+    animating = true;
+    btnAnimate.textContent = '⏸ Pauza';
+    btnAnimate.classList.add('active');
+    function step() {
+        wArg += 0.015;
+        if (wArg > Math.PI * 2) wArg -= Math.PI * 2;
+        syncSliders();
+        render();
+        animId = requestAnimationFrame(step);
+    }
+    animId = requestAnimationFrame(step);
+}
+
+function stopAnim() {
+    animating = false;
+    btnAnimate.textContent = '▶ Rotovať';
+    btnAnimate.classList.remove('active');
+    cancelAnimationFrame(animId);
+}
+
+btnAnimate.addEventListener('click', () => {
+    if (animating) stopAnim(); else startAnim();
+});
+
+btnReset.addEventListener('click', () => {
+    stopAnim();
+    zRe = 1; zIm = 1; wMag = 1; wArg = 0;
+    syncSliders();
+    render();
+});
+
+// Checkbox changes
+document.getElementById('showUnitCircle').addEventListener('change', render);
+document.getElementById('showProduct').addEventListener('change', render);
+document.getElementById('showConjugate').addEventListener('change', render);
+
+// ========================================
+// LESSONS
+// ========================================
+const stepBtns = document.querySelectorAll('.step-btn');
+const lessonContent = document.getElementById('lessonContent');
+
+function showLesson(idx) {
+    stepBtns.forEach(b => b.classList.remove('active'));
+    stepBtns[idx].classList.add('active');
+    lessonContent.innerHTML = lessons[idx];
+}
+
+stepBtns.forEach(btn => {
+    btn.addEventListener('click', () => showLesson(parseInt(btn.dataset.step)));
+});
+
+// ========================================
+// POWER CANVAS
+// ========================================
+const powerCanvas = document.getElementById('powerCanvas');
+const pctx = powerCanvas.getContext('2d');
+let PW, PH, PCX, PCY, PSCALE;
+
+function resizePowerCanvas() {
+    const container = powerCanvas.parentElement;
+    const w = container.clientWidth - 32;
+    PW = Math.max(300, w);
+    PH = Math.max(200, Math.round(PW * 0.5));
+    PCX = PW / 2; PCY = PH / 2;
+    PSCALE = PH / 9; // ~40px at 360px height
+    setupHiDPI(powerCanvas, pctx, PW, PH);
+}
+
+const POWER_COLORS = [
+    '#c084fc', '#a78bfa', '#818cf8', '#6366f1', '#4f46e5',
+    '#7c3aed', '#9333ea', '#a855f7', '#d946ef', '#ec4899',
+    '#f43f5e', '#ef4444'
+];
+
+function computePower(re, im, n) {
+    let rr = re, ri = im;
+    for (let k = 1; k < n; k++) {
+        const newRe = rr * re - ri * im;
+        const newIm = rr * im + ri * re;
+        rr = newRe; ri = newIm;
+    }
+    return { re: rr, im: ri };
+}
+
+function drawPower() {
+    const n = parseInt(document.getElementById('sliderN').value);
+    pctx.clearRect(0, 0, PW, PH);
+
+    // Grid
+    pctx.strokeStyle = themeColor('--grid');
+    pctx.lineWidth = 1;
+    for (let i = -Math.floor(PW / (2 * PSCALE)); i <= Math.floor(PW / (2 * PSCALE)); i++) {
+        if (i === 0) continue;
+        const x = PCX + i * PSCALE;
+        if (x > 0 && x < PW) { pctx.beginPath(); pctx.moveTo(x, 0); pctx.lineTo(x, PH); pctx.stroke(); }
+    }
+    for (let i = -Math.floor(PH / (2 * PSCALE)); i <= Math.floor(PH / (2 * PSCALE)); i++) {
+        if (i === 0) continue;
+        const y = PCY - i * PSCALE;
+        if (y > 0 && y < PH) { pctx.beginPath(); pctx.moveTo(0, y); pctx.lineTo(PW, y); pctx.stroke(); }
+    }
+
+    // Axes
+    pctx.strokeStyle = themeColor('--axis');
+    pctx.lineWidth = 1.5;
+    pctx.beginPath(); pctx.moveTo(0, PCY); pctx.lineTo(PW, PCY); pctx.stroke();
+    pctx.beginPath(); pctx.moveTo(PCX, 0); pctx.lineTo(PCX, PH); pctx.stroke();
+
+    // Axis labels
+    pctx.fillStyle = themeColor('--axis-label');
+    pctx.font = '10px sans-serif';
+    pctx.textAlign = 'center';
+    for (let i = -Math.floor(PW / (2 * PSCALE)); i <= Math.floor(PW / (2 * PSCALE)); i++) {
+        if (i === 0) continue;
+        const x = PCX + i * PSCALE;
+        if (x > 10 && x < PW - 10) pctx.fillText(i, x, PCY + 14);
+    }
+    pctx.fillText('Re', PW - 14, PCY - 6);
+    pctx.fillText('Im', PCX + 12, 12);
+
+    // Unit circle (faint)
+    pctx.strokeStyle = isLight ? '#ddd' : '#1e293b';
+    pctx.lineWidth = 1;
+    pctx.beginPath();
+    pctx.arc(PCX, PCY, PSCALE, 0, Math.PI * 2);
+    pctx.stroke();
+
+    // Compute all powers and find scale
+    const powers = [];
+    for (let k = 1; k <= n; k++) {
+        powers.push(computePower(zRe, zIm, k));
+    }
+
+    // Auto-scale if needed
+    let maxCoord = 1;
+    powers.forEach(p => { maxCoord = Math.max(maxCoord, Math.abs(p.re), Math.abs(p.im)); });
+    // Also include z itself
+    maxCoord = Math.max(maxCoord, Math.abs(zRe), Math.abs(zIm));
+    const autoScale = Math.min(PSCALE, (Math.min(PW, PH) / 2 - 30) / maxCoord);
+
+    function pToScreen(re, im) {
+        return [PCX + re * autoScale, PCY - im * autoScale];
+    }
+
+    // Draw spiral path connecting powers
+    pctx.strokeStyle = isLight ? '#c084fc44' : '#c084fc33';
+    pctx.lineWidth = 1.5;
+    pctx.beginPath();
+    const [sx, sy] = pToScreen(zRe, zIm);
+    pctx.moveTo(PCX, PCY);
+    // Draw arcs between consecutive powers
+    for (let k = 0; k <= n; k++) {
+        const pk = k === 0 ? { re: zRe, im: zIm } : powers[k - 1];
+        const [px, py] = pToScreen(pk.re, pk.im);
+        pctx.lineTo(px, py);
+    }
+    pctx.stroke();
+
+    // Draw z¹ vector
+    const [z1x, z1y] = pToScreen(zRe, zIm);
+    pctx.strokeStyle = '#c084fc66';
+    pctx.lineWidth = 1.5;
+    pctx.beginPath(); pctx.moveTo(PCX, PCY); pctx.lineTo(z1x, z1y); pctx.stroke();
+
+    // Draw each power dot + vector from origin
+    const infoEl = document.getElementById('powerInfo');
+    const colorsEl = document.getElementById('powerColors');
+    let infoHTML = '';
+    let colorsHTML = '';
+
+    for (let k = 0; k < n; k++) {
+        const p = powers[k];
+        const [px, py] = pToScreen(p.re, p.im);
+        const col = POWER_COLORS[k % POWER_COLORS.length];
+        const mag = Math.sqrt(p.re * p.re + p.im * p.im);
+        const arg = Math.atan2(p.im, p.re);
+
+        // Vector from origin
+        pctx.strokeStyle = col + '55';
+        pctx.lineWidth = 1.5;
+        pctx.setLineDash([3, 3]);
+        pctx.beginPath(); pctx.moveTo(PCX, PCY); pctx.lineTo(px, py); pctx.stroke();
+        pctx.setLineDash([]);
+
+        // Dot
+        const dotSize = k === n - 1 ? 8 : 5;
+        pctx.fillStyle = col;
+        pctx.beginPath(); pctx.arc(px, py, dotSize, 0, Math.PI * 2); pctx.fill();
+        if (k === n - 1) {
+            pctx.fillStyle = isLight ? '#fff' : '#000';
+            pctx.beginPath(); pctx.arc(px, py, 3, 0, Math.PI * 2); pctx.fill();
+        }
+
+        // Label
+        pctx.fillStyle = col;
+        pctx.font = k === n - 1 ? 'bold 12px sans-serif' : '10px sans-serif';
+        pctx.textAlign = 'left';
+        const superscripts = ['¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '¹⁰', '¹¹', '¹²'];
+        pctx.fillText('z' + superscripts[k], px + 8, py - 6);
+
+        // Info row
+        const kk = k + 1;
+        infoHTML += `<div class="pw-step">
+            <span class="pw-label" style="color:${col}">z${superscripts[k]}</span>
+            <span class="pw-val">${formatComplex(p.re, p.im)}</span>
+            <span class="pw-polar">|z${superscripts[k]}| = ${mag.toFixed(2)}, arg = ${Math.round(toDeg(arg))}°</span>
+        </div>`;
+
+        colorsHTML += `<span class="pc-dot" style="background:${col}"></span><span>z${superscripts[k]}</span>`;
+    }
+
+    // Origin dot
+    pctx.fillStyle = isLight ? '#666' : '#888';
+    pctx.beginPath(); pctx.arc(PCX, PCY, 3, 0, Math.PI * 2); pctx.fill();
+
+    // z label at z¹
+    pctx.fillStyle = '#c084fc';
+    pctx.font = '11px sans-serif';
+    pctx.textAlign = 'left';
+    pctx.fillText('z', z1x + 8, z1y - 8);
+
+    // Summary at top-right
+    const magZ = Math.sqrt(zRe*zRe + zIm*zIm);
+    const argZdeg = Math.round(toDeg(Math.atan2(zIm, zRe)));
+    const finalP = powers[n - 1];
+    const magFinal = Math.sqrt(finalP.re*finalP.re + finalP.im*finalP.im);
+    const argFinal = Math.round(toDeg(Math.atan2(finalP.im, finalP.re)));
+
+    pctx.fillStyle = isLight ? '#333' : '#ddd';
+    pctx.font = '12px monospace';
+    pctx.textAlign = 'right';
+    pctx.fillText(`|z|=${magZ.toFixed(2)}, arg(z)=${argZdeg}°`, PW - 10, 18);
+    pctx.fillStyle = POWER_COLORS[(n - 1) % POWER_COLORS.length];
+    const supN = ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹','¹⁰','¹¹','¹²'][n] || n;
+    pctx.fillText(`|z|${supN}=${magFinal.toFixed(2)}, ${n}·${argZdeg}°=${argFinal}°`, PW - 10, 34);
+
+    infoEl.innerHTML = infoHTML;
+    colorsEl.innerHTML = colorsHTML;
+}
+
+document.getElementById('sliderN').addEventListener('input', () => {
+    document.getElementById('sliderNVal').textContent = document.getElementById('sliderN').value;
+    drawPower();
+});
+
+// ========================================
+// RESIZE
+// ========================================
+function handleResize() {
+    resizeMainCanvas();
+    resizePowerCanvas();
+    render();
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(handleResize, 60);
+});
+
+// ========================================
+// INIT
+// ========================================
+resizeMainCanvas();
+resizePowerCanvas();
+showLesson(0);
+showChallenge();
+syncSliders();
+render();
+</script>
+
+</body>
+</html>
