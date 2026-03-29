@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matematika — Pochop to vizuálne</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0a0e17;--fg:#e0e0e0;--fg-dim:#8892a8;--fg-muted:#556;
+--panel-bg:#111827;--panel-border:#1e293b;
+--input-bg:#1a2535;--input-border:#2a3a4a;
+--row-bg:#1a1a2e;--explain-bg:#0f172a;
+--grid:#1a2535;--axis:#2a3a4a;--axis-label:#445;
+--accent:#7eb8da;
+--circle-stroke:#3a4a5a;--notable-dot:#2a3a4a;--notable-label:#3a4a5a;
+--triangle-fill:rgba(126,184,218,0.03);
+--curve-stroke:#34d399;
+}
+:root.light{
+--bg:#f0f2f5;--fg:#1a1a2e;--fg-dim:#555;--fg-muted:#999;
+--panel-bg:#ffffff;--panel-border:#d0d5dd;
+--input-bg:#e8ecf1;--input-border:#bcc3cf;
+--row-bg:#f0f2fa;--explain-bg:#f7f8fb;
+--grid:#e0e4ea;--axis:#bbb;--axis-label:#888;
+--circle-stroke:#aab;--notable-dot:#aab;--notable-label:#999;
+--triangle-fill:rgba(100,140,200,0.08);
+--curve-stroke:#059669;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
+header{text-align:center;padding:16px 20px 8px;position:relative}
+header h1{font-size:1.5rem;font-weight:300;color:var(--accent);letter-spacing:2px}
+header p{font-size:.8rem;color:var(--fg-muted);margin-top:2px}
+.top-btns{position:absolute;top:12px;right:16px;display:flex;gap:8px}
+.top-btn{padding:5px 10px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--fg-dim);border-radius:6px;cursor:pointer;font-size:.75rem}
+.top-btn:hover{opacity:.8}
+
+/* TABS */
+.tab-bar{display:flex;justify-content:center;gap:0;border-bottom:1px solid var(--panel-border);margin:0 20px}
+.tab-btn{padding:10px 20px;border:none;background:transparent;color:var(--fg-muted);cursor:pointer;font-size:.85rem;border-bottom:3px solid transparent;transition:all .2s}
+.tab-btn:hover{color:var(--fg-dim)}
+.tab-btn.active{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.main-container{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;padding:12px 20px 20px;max-width:1400px;margin:0 auto}
+.panel{background:var(--panel-bg);border-radius:12px;border:1px solid var(--panel-border);padding:14px}
+.panel h2{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--fg-muted);margin-bottom:8px}
+.full{width:100%}
+
+canvas{display:block;border-radius:8px}
+.grab{cursor:grab}.grab:active{cursor:grabbing}
+
+.value-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;margin-bottom:4px;font-family:'Courier New',monospace;font-size:.82rem;background:var(--row-bg)}
+.value-row .label{font-weight:700}.value-row .num{font-size:.95rem}
+.explanation{margin-top:10px;padding:10px;background:var(--explain-bg);border-radius:8px;font-size:.75rem;line-height:1.6;color:var(--fg-dim)}
+.explanation strong{color:var(--accent)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.controls label{font-size:.72rem;color:var(--fg-muted);display:flex;align-items:center;gap:5px}
+.controls input[type="checkbox"]{accent-color:var(--accent)}
+.btn{padding:5px 12px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--accent);border-radius:6px;cursor:pointer;font-size:.72rem;transition:background .2s}
+.btn:hover{opacity:.8}.btn.active{background:#2a4a5a;border-color:var(--accent)}
+.slider-box{margin-top:10px;padding:8px 10px;background:var(--explain-bg);border-radius:8px}
+.slider-box label{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--fg-dim)}
+.slider-box input[type="range"]{flex:1;accent-color:var(--accent)}
+.slider-val{color:var(--accent);font-weight:700;font-size:1rem;min-width:45px;text-align:right}
+
+/* Steps/Lessons */
+.steps{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.step-btn{padding:6px 14px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--fg-dim);border-radius:6px;cursor:pointer;font-size:.75rem;transition:all .2s}
+.step-btn:hover{opacity:.8}
+.step-btn.active{background:#1e3a5f;border-color:var(--accent);color:#e0e0e0}
+:root.light .step-btn.active{background:#dbeafe;border-color:var(--accent);color:#1e3a5f}
+.lesson-content{padding:14px;background:var(--explain-bg);border-radius:8px;font-size:.85rem;line-height:1.8;color:var(--fg-dim);min-height:60px}
+.lesson-content strong{color:var(--accent)}
+
+/* Challenge */
+.challenge-box{margin-top:8px;padding:8px 10px;background:var(--row-bg);border:1px solid var(--input-border);border-radius:8px;font-size:.75rem;line-height:1.5}
+.challenge-box .ch-title{color:#fbbf24;font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.challenge-box .ch-result{color:#34d399;font-weight:600;margin-top:3px;opacity:0;transition:opacity .3s}
+.challenge-box .ch-result.solved{opacity:1}
+.challenge-box .ch-next{margin-top:4px;padding:3px 8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--accent);border-radius:4px;cursor:pointer;font-size:.68rem}
+
+/* Trig specific */
+.sin-c{color:#f87171}.cos-c{color:#60a5fa}.tan-c{color:#fbbf24}.angle-c{color:#a78bfa}
+.row-angle .label{color:#a78bfa}.row-angle .num{color:#c4b5fd}
+.row-sin .label{color:#f87171}.row-sin .num{color:#fca5a5}
+.row-cos .label{color:#60a5fa}.row-cos .num{color:#93c5fd}
+.row-tan .label{color:#fbbf24}.row-tan .num{color:#fcd34d}
+.identity-box{margin-top:8px;padding:8px 10px;background:var(--explain-bg);border-radius:8px;font-family:'Courier New',monospace;font-size:.78rem;line-height:1.7;color:var(--fg-dim)}
+.identity-box .val-sin{color:#f87171}.identity-box .val-cos{color:#60a5fa}.identity-box .val-result{color:#34d399;font-weight:700}.identity-box .check{color:#34d399}
+
+/* Conics specific */
+.color-type{color:#34d399}.color-focus{color:#f59e0b}.color-dir{color:#a78bfa}
+.color-dist1{color:#f87171}.color-dist2{color:#60a5fa}.color-sum{color:#fbbf24}
+.property-box{margin-top:8px;padding:8px 10px;background:var(--explain-bg);border-radius:8px;font-family:'Courier New',monospace;font-size:.78rem;line-height:1.7;color:var(--fg-dim)}
+.property-box .check{color:#34d399}
+.type-label{text-align:center;margin-top:6px;font-size:.95rem;font-weight:600}
+.cone-label{text-align:center;margin-top:6px;font-size:.78rem;color:var(--fg-dim)}
+.c-focus{color:#f59e0b;font-weight:600}.c-dir{color:#a78bfa;font-weight:600}.c-curve{color:#34d399;font-weight:600}
+
+/* Complex specific */
+.color-z{color:#c084fc}.color-w{color:#34d399}.color-product{color:#f59e0b}
+.color-re{color:#60a5fa}.color-im{color:#f87171}.color-mag{color:#fbbf24}.color-arg{color:#a78bfa}
+:root.light .color-z{color:#9333ea}:root.light .color-w{color:#059669}:root.light .color-product{color:#d97706}
+.section-label{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--fg-muted);margin:8px 0 3px;padding-left:4px}
+.values-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.val-group{min-width:0}
+.mult-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;background:var(--explain-bg);border-radius:8px;font-family:'Courier New',monospace;font-size:.85rem;line-height:1.7}
+.power-info{margin-top:8px;padding:8px 10px;background:var(--explain-bg);border-radius:8px;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.7;color:var(--fg-dim);max-height:130px;overflow-y:auto}
+.power-info .pw-step{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.power-info .pw-label{color:#c084fc;min-width:28px;font-weight:700}
+.power-info .pw-val{color:var(--fg)}.power-info .pw-polar{color:var(--fg-muted);font-size:.72rem}
+.power-colors{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;align-items:center;font-size:.72rem;color:var(--fg-muted)}
+.power-colors .pc-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+.z-c{color:#c084fc;font-weight:600}.w-c{color:#34d399;font-weight:600}
+.re-c{color:#60a5fa;font-weight:600}.im-c{color:#f87171;font-weight:600}.product-c{color:#f59e0b;font-weight:600}
+
+.quadrant-info{margin-top:8px;text-align:center;font-size:.72rem;color:var(--fg-muted)}
+.quadrant-info span{color:var(--accent);font-weight:600}
+
+@media(max-width:700px){
+.tab-btn{padding:8px 12px;font-size:.75rem}
+.values-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+<h1 data-i18n="title">MATEMATIKA</h1>
+<p data-i18n="subtitle">Pochop to vizuálne</p>
+<div class="top-btns">
+<button class="top-btn" id="btnLang" onclick="toggleLang()">EN</button>
+<button class="top-btn" id="btnTheme" onclick="toggleTheme()">☀</button>
+</div>
+</header>
+
+<nav class="tab-bar">
+<button class="tab-btn active" data-tab="trig" data-i18n="tab_trig">Trigonometria</button>
+<button class="tab-btn" data-tab="conics" data-i18n="tab_conics">Kužeľosečky</button>
+<button class="tab-btn" data-tab="complex" data-i18n="tab_complex">Komplexné čísla</button>
+</nav>
+
+<!-- ===================== TRIGONOMETRY ===================== -->
+<div class="tab-content active" id="tab-trig">
+<div class="main-container">
+<div class="panel full">
+<h2 data-i18n="trig_circle_title">Jednotková kružnica</h2>
+<canvas id="t_circleC" class="grab"></canvas>
+<div class="quadrant-info" data-i18n-tpl="trig_quadrant"><span data-i18n="trig_quadrant_label">Kvadrant</span>: <span id="t_quadrant">I</span></div>
+<div class="controls">
+<label><input type="checkbox" id="t_showSin" checked> <span class="sin-c" data-i18n="trig_sin_wave">sin vlna</span></label>
+<label><input type="checkbox" id="t_showCos" checked> <span class="cos-c" data-i18n="trig_cos_wave">cos vlna</span></label>
+<label><input type="checkbox" id="t_showTan"> <span class="tan-c" data-i18n="trig_tan_wave">tan vlna</span></label>
+<button class="btn" id="t_btnAnim" data-i18n="trig_animate">▶ Animovať</button>
+<button class="btn" id="t_btnReset">Reset</button>
+</div>
+</div>
+<div class="panel full">
+<h2 data-i18n="trig_wave_title">Vlna — sin a cos vznikajú z kruhového pohybu</h2>
+<canvas id="t_waveC"></canvas>
+</div>
+<div class="panel full">
+<h2 data-i18n="trig_values_title">Aktuálne hodnoty</h2>
+<div class="values-grid">
+<div class="val-group">
+<div class="value-row row-angle"><span class="label" data-i18n="trig_angle">Uhol</span><span class="num" id="t_valAngle">45°</span></div>
+<div class="value-row row-angle"><span class="label" data-i18n="trig_radians">Radiány</span><span class="num" id="t_valRad">0.79</span></div>
+</div>
+<div class="val-group">
+<div class="value-row row-sin"><span class="label">sin α</span><span class="num" id="t_valSin">0.707</span></div>
+<div class="value-row row-cos"><span class="label">cos α</span><span class="num" id="t_valCos">0.707</span></div>
+<div class="value-row row-tan"><span class="label">tan α</span><span class="num" id="t_valTan">1.000</span></div>
+</div>
+<div class="val-group">
+<div class="identity-box">
+<span class="val-sin">sin²</span> + <span class="val-cos">cos²</span> =
+<span class="val-sin" id="t_idSin2">0.500</span> +
+<span class="val-cos" id="t_idCos2">0.500</span> =
+<span class="val-result" id="t_idRes">1.000</span>
+<span class="check">✓</span>
+</div>
+<div class="challenge-box">
+<div class="ch-title" data-i18n="challenge">Výzva</div>
+<div id="t_chText"></div>
+<div class="ch-result" id="t_chResult" data-i18n="correct">Spr��vne!</div>
+<button class="ch-next" id="t_chNext" data-i18n="next_challenge">Ďalšia výzva</button>
+</div>
+</div>
+</div>
+</div>
+<div class="panel full">
+<h2 data-i18n="trig_lesson_title">Pochop krok za krokom</h2>
+<div class="steps" id="t_steps"></div>
+<div class="lesson-content" id="t_lesson"></div>
+</div>
+</div>
+</div>
+
+<!-- ===================== CONICS ===================== -->
+<div class="tab-content" id="tab-conics">
+<div class="main-container">
+<div class="panel full">
+<h2 data-i18n="con_canvas_title">Kužeľosečka — pohľad zhora</h2>
+<canvas id="c_mainC" class="grab"></canvas>
+<div class="slider-box">
+<label>
+<span data-i18n="con_ecc">Excentricita (e):</span>
+<input type="range" id="c_eccSlider" min="0" max="200" value="0" step="1">
+<span class="slider-val" id="c_eccVal">0.00</span>
+</label>
+</div>
+<div class="slider-box">
+<label>
+<span data-i18n="con_zoom">Priblíženie:</span>
+<input type="range" id="c_zoomSlider" min="20" max="100" value="100" step="1">
+<span class="slider-val" id="c_zoomVal">1.0×</span>
+</label>
+</div>
+<div class="type-label color-type" id="c_typeLabel">Kružnica</div>
+</div>
+<div class="panel full">
+<h2 data-i18n="con_cone_title">Rez kužeľom</h2>
+<canvas id="c_coneC"></canvas>
+<div class="cone-label" id="c_coneLabel"></div>
+</div>
+<div class="panel full">
+<h2 data-i18n="con_values_title">Vlastnosti</h2>
+<div class="values-grid">
+<div class="val-group">
+<div class="value-row"><span class="label color-type" data-i18n="con_type">Typ</span><span class="num" id="c_vType">Kružnica</span></div>
+<div class="value-row"><span class="label">e</span><span class="num color-type" id="c_vEcc">0.00</span></div>
+</div>
+<div class="val-group">
+<div class="value-row"><span class="label color-dist1">d(P, F₁)</span><span class="num" id="c_vDist1">��</span></div>
+<div class="value-row"><span class="label color-dist2">d(P, F₂)</span><span class="num" id="c_vDist2">—</span></div>
+<div class="value-row"><span class="label color-sum" id="c_vSumLabel">Súčet</span><span class="num" id="c_vSum">—</span></div>
+</div>
+<div class="val-group">
+<div class="value-row"><span class="label color-dir" data-i18n="con_dist_dir">d(P, riad.)</span><span class="num" id="c_vDistDir">—</span></div>
+<div class="value-row"><span class="label">d(P,F)/d(P,r)</span><span class="num color-type" id="c_vRatio">—</span></div>
+</div>
+</div>
+<div class="property-box" id="c_propBox"></div>
+<div class="challenge-box">
+<div class="ch-title" data-i18n="challenge">Výzva</div>
+<div id="c_chText"></div>
+<div class="ch-result" id="c_chResult" data-i18n="correct">Správne!</div>
+<button class="ch-next" id="c_chNext" data-i18n="next_challenge">Ďalšia výzva</button>
+</div>
+<div class="explanation" id="c_explain"></div>
+</div>
+<div class="panel full">
+<h2 data-i18n="con_lesson_title">Pochop krok za krokom</h2>
+<div class="steps" id="c_steps"></div>
+<div class="lesson-content" id="c_lesson"></div>
+</div>
+</div>
+</div>
+
+<!-- ===================== COMPLEX ===================== -->
+<div class="tab-content" id="tab-complex">
+<div class="main-container">
+<div class="panel full">
+<h2 data-i18n="cpx_canvas_title">Komplexná rovina</h2>
+<canvas id="x_mainC" class="grab"></canvas>
+<div class="controls">
+<label><input type="checkbox" id="x_showUnit" checked> <span data-i18n="cpx_unit_circle">Jednotková kružnica</span></label>
+<label><input type="checkbox" id="x_showProd" checked> <span style="color:#f59e0b" data-i18n="cpx_product">Súčin z·w</span></label>
+<label><input type="checkbox" id="x_showConj"> <span style="color:#fb7185" data-i18n="cpx_conjugate">Konjugát z̄</span></label>
+<button class="btn" id="x_btnAnim" data-i18n="cpx_rotate">▶ Rotovať</button>
+<button class="btn" id="x_btnReset">Reset</button>
+</div>
+</div>
+<div class="panel full">
+<h2 data-i18n="cpx_values_title">Hodnoty</h2>
+<div class="values-grid">
+<div class="val-group">
+<div class="section-label color-z" data-i18n="cpx_z_label">z (fialový bod)</div>
+<div class="value-row"><span class="label color-z">z</span><span class="num color-z" id="x_valZ">1 + i</span></div>
+<div class="value-row"><span class="label color-mag">|z|</span><span class="num color-mag" id="x_valMagZ">1.414</span></div>
+<div class="value-row"><span class="label color-arg">arg(z)</span><span class="num color-arg" id="x_valArgZ">45°</span></div>
+</div>
+<div class="val-group">
+<div class="section-label color-w" data-i18n="cpx_w_label">w (zelený bod)</div>
+<div class="value-row"><span class="label color-w">w</span><span class="num color-w" id="x_valW">1 + 0i</span></div>
+<div class="value-row"><span class="label color-mag">|w|</span><span class="num color-mag" id="x_valMagW">1.000</span></div>
+<div class="value-row"><span class="label color-arg">arg(w)</span><span class="num color-arg" id="x_valArgW">0°</span></div>
+</div>
+<div class="val-group">
+<div class="section-label color-product" data-i18n="cpx_zw_label">z · w (oranžový bod)</div>
+<div class="value-row"><span class="label color-product">z·w</span><span class="num color-product" id="x_valProd">1 + i</span></div>
+<div class="value-row"><span class="label color-mag">|z·w|</span><span class="num color-mag" id="x_valMagP">1.414</span></div>
+<div class="value-row"><span class="label color-arg">arg(z·w)</span><span class="num color-arg" id="x_valArgP">45°</span></div>
+</div>
+</div>
+<div class="explanation" id="x_multExplainBox">
+<strong data-i18n="cpx_mult_title">Násobenie</strong> = <span data-i18n="cpx_mult_desc">rotácia + škálovanie</span>:<br>
+<span class="color-mag">|z·w| = |z| · |w|</span> — <span data-i18n="cpx_mag_mult">veľkosti sa násobia</span><br>
+<span class="color-arg">arg(z·w) = arg(z) + arg(w)</span> — <span data-i18n="cpx_arg_add">uhly sa sčítajú</span>
+</div>
+<div class="challenge-box">
+<div class="ch-title" data-i18n="challenge">Výzva</div>
+<div id="x_chText"></div>
+<div class="ch-result" id="x_chResult" data-i18n="correct">Správne!</div>
+<button class="ch-next" id="x_chNext" data-i18n="next_challenge">Ďalšia výzva</button>
+</div>
+</div>
+<div class="panel full">
+<h2 data-i18n="cpx_mult_step">Násobenie krok za krokom</h2>
+<div class="mult-row" id="x_multExplain"></div>
+<div class="slider-box"><label><span data-i18n="cpx_angle_w">Uhol w:</span><input type="range" id="x_slArgW" min="0" max="360" value="0" step="1"><span class="slider-val" id="x_slArgWVal">0°</span></label></div>
+<div class="slider-box"><label><span data-i18n="cpx_mag_w">Veľkosť w:</span><input type="range" id="x_slMagW" min="10" max="300" value="100" step="1"><span class="slider-val" id="x_slMagWVal">1.00</span></label></div>
+</div>
+<div class="panel full">
+<h2 data-i18n="cpx_power_title">Umocňovanie — z<sup>n</sup></h2>
+<canvas id="x_powerC"></canvas>
+<div class="slider-box"><label><span data-i18n="cpx_exponent">Exponent n:</span><input type="range" id="x_slN" min="1" max="12" value="4" step="1"><span class="slider-val" id="x_slNVal">4</span></label></div>
+<div class="power-colors" id="x_pwColors"></div>
+<div class="power-info" id="x_pwInfo"></div>
+</div>
+<div class="panel full">
+<h2 data-i18n="cpx_lesson_title">Pochop krok za krokom</h2>
+<div class="steps" id="x_steps"></div>
+<div class="lesson-content" id="x_lesson"></div>
+</div>
+</div>
+</div>
+
+<script>
+// ============================================================
+// SHARED STATE & UTILITIES
+// ============================================================
+let currentLang = 'sk';
+let isLight = false;
+let activeTab = 'trig';
+
+function $(id) { return document.getElementById(id); }
+function themeColor(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+function setupHiDPI(c, ct, w, h) {
+    const d = window.devicePixelRatio || 1;
+    c.width = w * d; c.height = h * d;
+    c.style.width = w + 'px'; c.style.height = h + 'px';
+    ct.setTransform(1,0,0,1,0,0);
+    ct.scale(d, d);
+}
+
+// ============================================================
+// LANGUAGE SYSTEM
+// ============================================================
+const I = {
+sk: {
+title:'MATEMATIKA', subtitle:'Pochop to vizuálne',
+tab_trig:'Trigonometria', tab_conics:'Kužeľosečky', tab_complex:'Komplexné čísla',
+challenge:'Výzva', correct:'Správne!', next_challenge:'Ďalšia výzva',
+// Trig
+trig_circle_title:'Jednotková kružnica', trig_wave_title:'Vlna — sin a cos vznikajú z kruhového pohybu',
+trig_values_title:'Aktuálne hodnoty', trig_lesson_title:'Pochop krok za krokom',
+trig_angle:'Uhol', trig_radians:'Radiány',
+trig_sin_wave:'sin vlna', trig_cos_wave:'cos vlna', trig_tan_wave:'tan vlna',
+trig_animate:'▶ Animovať', trig_pause:'⏸ Pauza', trig_quadrant_label:'Kvadrant',
+// Conics
+con_canvas_title:'Kužeľosečka — pohľad zhora', con_cone_title:'Rez kužeľom',
+con_values_title:'Vlastnosti', con_lesson_title:'Pochop krok za krokom',
+con_ecc:'Excentricita (e):', con_type:'Typ', con_dist_dir:'d(P, riad.)',
+con_circle:'Kružnica', con_ellipse:'Elipsa', con_parabola:'Parabola', con_hyperbola:'Hyperbola',
+con_sum:'Súčet', con_diff:'|Rozdiel|',
+con_cone_circle:'Kružnica — rovina ⊥ na os', con_cone_ellipse:'Elipsa — šikmý rez',
+con_cone_parabola:'Parabola — rovnobežne s hranou', con_cone_hyperbola:'Hyperbola — zvislá rovina cez oba kužele',
+con_directrix:'riadiaca priamka', con_zoom:'Priblíženie:',
+con_explain:'<strong>Kužeľosečka</strong> = množina bodov, kde pomer<br>vzdialenosť k <span style="color:#f59e0b">ohnisku</span> / vzdialenosť k <span style="color:#a78bfa">riadiacej priamke</span> = <strong>e</strong><br><br>e = 0 → kružnica | 0 &lt; e &lt; 1 → elipsa<br>e = 1 → parabola | e &gt; 1 → hyperbola',
+con_prop_circle:'Všetky body rovnako ďaleko od stredu:',
+con_prop_parabola_eq:'rovné',
+con_prop_const:'konšt.',
+// Complex
+cpx_canvas_title:'Komplexná rovina', cpx_values_title:'Hodnoty',
+cpx_lesson_title:'Pochop krok za krokom',
+cpx_unit_circle:'Jednotková kružnica', cpx_product:'Súčin z·w', cpx_conjugate:'Konjugát z̄',
+cpx_rotate:'▶ Rotovať', cpx_pause:'⏸ Pauza',
+cpx_z_label:'z (fialový bod)', cpx_w_label:'w (zelený bod)', cpx_zw_label:'z · w (oranžový bod)',
+cpx_mult_title:'Násobenie', cpx_mult_desc:'rotácia + škálovanie',
+cpx_mag_mult:'veľkosti sa násobia', cpx_arg_add:'uhly sa sčítajú',
+cpx_mult_step:'Násobenie krok za krokom',
+cpx_angle_w:'Uhol w:', cpx_mag_w:'Veľkosť w:', cpx_exponent:'Exponent n:',
+cpx_power_title:'Umocňovanie — z<sup>n</sup>',
+},
+en: {
+title:'MATHEMATICS', subtitle:'Understand it visually',
+tab_trig:'Trigonometry', tab_conics:'Conic Sections', tab_complex:'Complex Numbers',
+challenge:'Challenge', correct:'Correct!', next_challenge:'Next challenge',
+trig_circle_title:'Unit circle', trig_wave_title:'Wave — sin and cos come from circular motion',
+trig_values_title:'Current values', trig_lesson_title:'Understand step by step',
+trig_angle:'Angle', trig_radians:'Radians',
+trig_sin_wave:'sin wave', trig_cos_wave:'cos wave', trig_tan_wave:'tan wave',
+trig_animate:'▶ Animate', trig_pause:'⏸ Pause', trig_quadrant_label:'Quadrant',
+con_canvas_title:'Conic section — top view', con_cone_title:'Slicing a cone',
+con_values_title:'Properties', con_lesson_title:'Understand step by step',
+con_ecc:'Eccentricity (e):', con_type:'Type', con_dist_dir:'d(P, dir.)',
+con_circle:'Circle', con_ellipse:'Ellipse', con_parabola:'Parabola', con_hyperbola:'Hyperbola',
+con_sum:'Sum', con_diff:'|Difference|',
+con_cone_circle:'Circle — plane ⊥ to axis', con_cone_ellipse:'Ellipse — oblique cut',
+con_cone_parabola:'Parabola — parallel to edge', con_cone_hyperbola:'Hyperbola — vertical plane through both cones',
+con_directrix:'directrix', con_zoom:'Zoom:',
+con_explain:'<strong>Conic section</strong> = set of points where the ratio<br>distance to <span style="color:#f59e0b">focus</span> / distance to <span style="color:#a78bfa">directrix</span> = <strong>e</strong><br><br>e = 0 → circle | 0 &lt; e &lt; 1 → ellipse<br>e = 1 → parabola | e &gt; 1 → hyperbola',
+con_prop_circle:'All points equidistant from center:',
+con_prop_parabola_eq:'equal',
+con_prop_const:'const.',
+cpx_canvas_title:'Complex plane', cpx_values_title:'Values',
+cpx_lesson_title:'Understand step by step',
+cpx_unit_circle:'Unit circle', cpx_product:'Product z·w', cpx_conjugate:'Conjugate z̄',
+cpx_rotate:'▶ Rotate', cpx_pause:'⏸ Pause',
+cpx_z_label:'z (purple point)', cpx_w_label:'w (green point)', cpx_zw_label:'z · w (orange point)',
+cpx_mult_title:'Multiplication', cpx_mult_desc:'rotation + scaling',
+cpx_mag_mult:'magnitudes multiply', cpx_arg_add:'angles add up',
+cpx_mult_step:'Multiplication step by step',
+cpx_angle_w:'Angle of w:', cpx_mag_w:'Magnitude of w:', cpx_exponent:'Exponent n:',
+cpx_power_title:'Exponentiation — z<sup>n</sup>',
+}
+};
+
+function L(key) { return I[currentLang][key] || I['sk'][key] || key; }
+
+function applyLang() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const k = el.getAttribute('data-i18n');
+        const v = L(k);
+        if (v) el.innerHTML = v;
+    });
+    $('btnLang').textContent = currentLang === 'sk' ? 'EN' : 'SK';
+    // Re-render lessons and challenges
+    trigShowLesson(trigCurrentStep);
+    trigShowChallenge();
+    conShowLesson(conCurrentStep);
+    conShowChallenge();
+    cpxShowLesson(cpxCurrentStep);
+    cpxShowChallenge();
+    $('c_explain').innerHTML = L('con_explain');
+    renderActive();
+}
+
+function toggleLang() {
+    currentLang = currentLang === 'sk' ? 'en' : 'sk';
+    applyLang();
+}
+
+function toggleTheme() {
+    isLight = !isLight;
+    document.documentElement.classList.toggle('light', isLight);
+    $('btnTheme').textContent = isLight ? '☾' : '☀';
+    renderActive();
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+const tabBtns = document.querySelectorAll('.tab-btn');
+const ACCENTS = { trig:'#7eb8da', conics:'#34d399', complex:'#c084fc' };
+
+function switchTab(tab) {
+    activeTab = tab;
+    document.documentElement.style.setProperty('--accent', ACCENTS[tab]);
+    tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-content').forEach(d => d.classList.toggle('active', d.id === 'tab-' + tab));
+    resizeActive();
+    renderActive();
+}
+
+tabBtns.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+function renderActive() {
+    if (activeTab === 'trig') trigRender();
+    else if (activeTab === 'conics') conRender();
+    else cpxRender();
+}
+
+function resizeActive() {
+    if (activeTab === 'trig') trigResize();
+    else if (activeTab === 'conics') conResize();
+    else cpxResize();
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { resizeActive(); renderActive(); }, 80); });
+
+// ============================================================
+// TRIGONOMETRY
+// ============================================================
+const t_circleC = $('t_circleC'), t_ctx = t_circleC.getContext('2d');
+const t_waveC = $('t_waveC'), t_wctx = t_waveC.getContext('2d');
+let t_CW, t_CH, t_CX, t_CY, t_CR;
+let t_WW, t_WH;
+let t_angle = Math.PI/4, t_animating = false, t_animId = null, t_dragging = false;
+
+const NOTABLE_DEGS=[0,30,45,60,90,120,135,150,180,210,225,240,270,300,315,330];
+function t_snap(raw) {
+    const d=((raw*180/Math.PI)%360+360)%360;
+    for(const n of NOTABLE_DEGS) if(Math.abs(d-n)<=3||Math.abs(d-n+360)<=3) return n*Math.PI/180;
+    return raw;
+}
+
+function trigResize() {
+    const p = t_circleC.parentElement;
+    const w = p.clientWidth - 28;
+    const s = Math.max(280, Math.min(w, 600));
+    t_CW = s; t_CH = s; t_CX = s/2; t_CY = s/2; t_CR = s*0.38;
+    setupHiDPI(t_circleC, t_ctx, t_CW, t_CH);
+    t_WW = Math.max(300, w); t_WH = Math.max(180, Math.round(t_WW*0.35));
+    setupHiDPI(t_waveC, t_wctx, t_WW, t_WH);
+}
+
+function trigDrawCircle() {
+    const ctx=t_ctx, w=t_CW, h=t_CH, cx=t_CX, cy=t_CY, cr=t_CR;
+    ctx.clearRect(0,0,w,h);
+    const sinV=Math.sin(t_angle), cosV=Math.cos(t_angle);
+    const px=cx+cosV*cr, py=cy-sinV*cr;
+    // Grid
+    ctx.strokeStyle=themeColor('--grid'); ctx.lineWidth=1;
+    for(let i=-1;i<=1;i+=.5){if(i===0)continue;const gx=cx+i*cr,gy=cy-i*cr;ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();}
+    // Axes
+    ctx.strokeStyle=themeColor('--axis');ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+    // Labels
+    ctx.fillStyle=themeColor('--axis-label');ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('1',cx+cr,cy+16);ctx.fillText('-1',cx-cr,cy+16);ctx.fillText('1',cx-14,cy-cr+4);ctx.fillText('-1',cx-17,cy+cr+4);
+    // Unit circle
+    ctx.strokeStyle=themeColor('--circle-stroke');ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,cr,0,Math.PI*2);ctx.stroke();
+    // Angle arc
+    ctx.strokeStyle='#a78bfa55';ctx.lineWidth=2;ctx.beginPath();const ar=Math.min(30,cr*.2);ctx.arc(cx,cy,ar,0,-t_angle,t_angle>0);ctx.stroke();
+    // Angle label
+    const la=t_angle/2,lr=ar+14,deg=((t_angle*180/Math.PI)%360+360)%360;
+    ctx.fillStyle='#a78bfa';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText(Math.round(deg)+'°',cx+Math.cos(-la)*lr,cy+Math.sin(-la)*lr+4);
+    // Triangle
+    ctx.fillStyle=themeColor('--triangle-fill');ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,cy);ctx.lineTo(px,py);ctx.closePath();ctx.fill();
+    // cos line
+    ctx.strokeStyle='#60a5fa';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,cy);ctx.stroke();
+    // sin line
+    ctx.strokeStyle='#f87171';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(px,cy);ctx.lineTo(px,py);ctx.stroke();
+    // Hypotenuse
+    ctx.strokeStyle='#7eb8da';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,py);ctx.stroke();
+    // Tan line
+    if($('t_showTan').checked&&Math.abs(cosV)>0.01){const tanV=sinV/cosV,tanY=cy-tanV*cr,tanX=cx+cr;ctx.strokeStyle='#fbbf2466';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tanX,tanY);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle='#fbbf24';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(tanX,cy);ctx.lineTo(tanX,tanY);ctx.stroke();}
+    // Right angle marker
+    const rs=8,sx=cosV>=0?-1:1,sy=sinV>=0?1:-1;ctx.strokeStyle=themeColor('--fg-muted');ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px+sx*rs,cy);ctx.lineTo(px+sx*rs,cy+sy*(-rs));ctx.lineTo(px,cy+sy*(-rs));ctx.stroke();
+    // Notable dots
+    NOTABLE_DEGS.forEach(d=>{const a=d*Math.PI/180,nx=cx+Math.cos(a)*cr,ny=cy-Math.sin(a)*cr,isA=Math.abs(((t_angle*180/Math.PI)%360+360)%360-d)<1;ctx.fillStyle=isA?'#7eb8da':themeColor('--notable-dot');ctx.beginPath();ctx.arc(nx,ny,isA?4:2.5,0,Math.PI*2);ctx.fill();if([0,30,45,60,90,180,270].includes(d)){ctx.fillStyle=themeColor('--notable-label');ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText(d+'°',cx+Math.cos(a)*(cr+14),cy-Math.sin(a)*(cr+14)+3);}});
+    // Point
+    ctx.fillStyle=isLight?'#333':'#fff';ctx.beginPath();ctx.arc(px,py,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#7eb8da';ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
+    // Projections
+    ctx.fillStyle='#60a5fa';ctx.beginPath();ctx.arc(px,cy,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#f87171';ctx.beginPath();ctx.arc(cx,py,4,0,Math.PI*2);ctx.fill();
+    ctx.font='11px monospace';ctx.fillStyle='#60a5fa';ctx.textAlign='center';ctx.fillText('cos',(cx+px)/2,cy+(sinV>=0?16:-8));
+    ctx.fillStyle='#f87171';ctx.textAlign=cosV>=0?'left':'right';ctx.fillText('sin',px+(cosV>=0?8:-26),(cy+py)/2+4);
+    // Radian arc
+    ctx.strokeStyle='#a78bfa';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,cr,0,-t_angle,t_angle>0);ctx.stroke();
+}
+
+function trigDrawWave() {
+    const ctx=t_wctx,w=t_WW,h=t_WH,midY=h/2,amp=h*0.38,startX=40,endX=w-10,waveW=endX-startX;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle=themeColor('--grid');ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(startX,midY-amp);ctx.lineTo(endX,midY-amp);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(startX,midY+amp);ctx.lineTo(endX,midY+amp);ctx.stroke();
+    ctx.strokeStyle=themeColor('--axis');ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(startX,midY);ctx.lineTo(endX,midY);ctx.stroke();
+    ctx.fillStyle=themeColor('--axis-label');ctx.font='10px sans-serif';ctx.textAlign='center';
+    [0,90,180,270,360].forEach(d=>{const x=startX+(d/360)*waveW;ctx.fillText(d+'°',x,midY+amp+16);ctx.strokeStyle=themeColor('--grid');ctx.beginPath();ctx.moveTo(x,midY-amp);ctx.lineTo(x,midY+amp);ctx.stroke();});
+    ctx.textAlign='right';ctx.fillText('1',startX-6,midY-amp+4);ctx.fillText('0',startX-6,midY+4);ctx.fillText('-1',startX-6,midY+amp+4);
+    const showS=$('t_showSin').checked,showC=$('t_showCos').checked,showT=$('t_showTan').checked;
+    function drawLine(fn,col,clamp){ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();let s=false;for(let i=0;i<=waveW;i++){const a=(i/waveW)*Math.PI*2;let v=fn(a);if(clamp){if(Math.abs(v)>5){s=false;continue;}v=Math.max(-1.5,Math.min(1.5,v));}const x=startX+i,y=midY-v*amp;if(!s){ctx.moveTo(x,y);s=true;}else ctx.lineTo(x,y);}ctx.stroke();}
+    if(showC) drawLine(Math.cos,'#60a5fa88',false);
+    if(showS) drawLine(Math.sin,'#f8717188',false);
+    if(showT) drawLine(a=>Math.tan(a),'#fbbf2466',true);
+    const na=((t_angle%(Math.PI*2))+Math.PI*2)%(Math.PI*2),mx=startX+(na/(Math.PI*2))*waveW;
+    ctx.strokeStyle='#a78bfa55';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(mx,midY-amp-5);ctx.lineTo(mx,midY+amp+5);ctx.stroke();ctx.setLineDash([]);
+    if(showS){ctx.fillStyle='#f87171';ctx.beginPath();ctx.arc(mx,midY-Math.sin(t_angle)*amp,5,0,Math.PI*2);ctx.fill();}
+    if(showC){ctx.fillStyle='#60a5fa';ctx.beginPath();ctx.arc(mx,midY-Math.cos(t_angle)*amp,5,0,Math.PI*2);ctx.fill();}
+}
+
+function trigUpdateValues() {
+    const deg=((t_angle*180/Math.PI)%360+360)%360,rad=((t_angle%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+    const s=Math.sin(t_angle),c=Math.cos(t_angle),t=Math.abs(c)<.001?'∞':(s/c).toFixed(3);
+    $('t_valAngle').textContent=Math.round(deg)+'°';$('t_valRad').textContent=rad.toFixed(2);
+    $('t_valSin').textContent=s.toFixed(3);$('t_valCos').textContent=c.toFixed(3);$('t_valTan').textContent=t;
+    $('t_quadrant').textContent=deg<=90?'I':deg<=180?'II':deg<=270?'III':'IV';
+    const s2=s*s,c2=c*c;$('t_idSin2').textContent=s2.toFixed(3);$('t_idCos2').textContent=c2.toFixed(3);$('t_idRes').textContent=(s2+c2).toFixed(3);
+    trigCheckChallenge();
+}
+
+function trigRender() { trigDrawCircle(); trigDrawWave(); trigUpdateValues(); }
+
+// Trig interaction
+function t_getAngle(e){const r=t_circleC.getBoundingClientRect();return Math.atan2(-(e.clientY-r.top-t_CY),e.clientX-r.left-t_CX);}
+t_circleC.addEventListener('mousedown',e=>{t_dragging=true;t_angle=t_snap(t_getAngle(e));if(t_animating)t_stopAnim();trigRender();});
+window.addEventListener('mousemove',e=>{if(!t_dragging)return;t_angle=t_snap(t_getAngle(e));trigRender();});
+window.addEventListener('mouseup',()=>{t_dragging=false;});
+t_circleC.addEventListener('touchstart',e=>{e.preventDefault();t_dragging=true;t_angle=t_snap(t_getAngle(e.touches[0]));if(t_animating)t_stopAnim();trigRender();},{passive:false});
+window.addEventListener('touchmove',e=>{if(!t_dragging)return;t_angle=t_snap(t_getAngle(e.touches[0]));trigRender();},{passive:false});
+window.addEventListener('touchend',()=>{t_dragging=false;});
+
+function t_startAnim(){t_animating=true;$('t_btnAnim').textContent=L('trig_pause');$('t_btnAnim').classList.add('active');function s(){t_angle+=.015;trigRender();t_animId=requestAnimationFrame(s);}t_animId=requestAnimationFrame(s);}
+function t_stopAnim(){t_animating=false;$('t_btnAnim').textContent=L('trig_animate');$('t_btnAnim').classList.remove('active');cancelAnimationFrame(t_animId);}
+$('t_btnAnim').addEventListener('click',()=>{t_animating?t_stopAnim():t_startAnim();});
+$('t_btnReset').addEventListener('click',()=>{t_stopAnim();t_angle=Math.PI/4;trigRender();});
+$('t_showSin').addEventListener('change',trigRender);$('t_showCos').addEventListener('change',trigRender);$('t_showTan').addEventListener('change',trigRender);
+
+// Trig lessons
+const trigLessons = {
+sk:[
+`<strong>Nakresli kružnicu s polomerom 1.</strong> To je celé. Toto je „jednotková kružnica" — základ trigonometrie. Stred je v bode [0, 0]. Polomer je presne 1.<br><br>➜ Skús ťahať bod po kružnici. Pozoruj ako sa menia čísla.`,
+`<strong>V kružnici sa skrýva pravouhlý trojuholník.</strong> Spoj stred s bodom na kružnici — to je prepona (vždy = 1). Spusti kolmicu na os x — dostaneš pravouhlý trojuholník.<br><br>Prepona = <strong>1</strong>, Priľahlá = <span class="cos-c">cos α</span>, Protiľahlá = <span class="sin-c">sin α</span><br><br>➜ Ťahaj bod a sleduj ako sa trojuholník mení.`,
+`<strong>Sin a cos sú jednoducho súradnice.</strong><br><span class="cos-c">cos α</span> = x-ová súradnica bodu<br><span class="sin-c">sin α</span> = y-ová súradnica bodu<br><br>Preto: sin²α + cos²α = 1. Vždy. Je to Pytagorova veta!<br><br>➜ Ťahaj bod na uhol 30°. Sin = 0.5.`,
+`<strong>Radián = dĺžka oblúka na jednotkovej kružnici.</strong><br>Celý obvod = 2π ≈ 6.28, preto celý kruh = 2π radiánov = 360°.<br>Radiány nie sú „iný zápis stupňov" — sú to <strong>skutočné dĺžky</strong>.<br><br>➜ Sleduj hodnotu radiánov pri ťahaní. Pri 90° = π/2 ≈ 1.57.`,
+`<strong>Vlna vzniká z kruhového pohybu.</strong><br>y-súradnica (<span class="sin-c">sin</span>) zapisovaná doprava → vlna!<br>x-súradnica (<span class="cos-c">cos</span>) → rovnaká vlna, posunutá.<br><br>➜ Klikni „Animovať" a sleduj vlnu v reálnom čase.`,
+`<strong>Tangens = sklon priamky od stredu ku bodu.</strong><br><span class="tan-c">tan α</span> = <span class="sin-c">sin α</span> / <span class="cos-c">cos α</span> = y / x<br><br>Preto tan 45° = 1, tan 90° neexistuje (zvislá priamka).<br><br>➜ Zapni „tan vlna" a ťahaj bod k 90°.`,
+`<strong>4 kvadranty určujú znamienka.</strong><br>I (0°–90°): <span class="sin-c">sin +</span>, <span class="cos-c">cos +</span><br>II (90°–180°): <span class="sin-c">sin +</span>, <span class="cos-c">cos −</span><br>III (180°–270°): <span class="sin-c">sin −</span>, <span class="cos-c">cos −</span><br>IV (270°–360°): <span class="sin-c">sin −</span>, <span class="cos-c">cos +</span><br><br>➜ Ťahaj bod do každého kvadrantu a sleduj znamienka.`
+],
+en:[
+`<strong>Draw a circle with radius 1.</strong> That's it. This is the "unit circle" — the foundation of trigonometry. Center at [0, 0]. Radius exactly 1.<br><br>➜ Try dragging the point around the circle. Watch the numbers change.`,
+`<strong>A right triangle hides inside the circle.</strong> Connect the center to the point — that's the hypotenuse (always = 1). Drop a perpendicular to the x-axis — you get a right triangle.<br><br>Hypotenuse = <strong>1</strong>, Adjacent = <span class="cos-c">cos α</span>, Opposite = <span class="sin-c">sin α</span><br><br>➜ Drag the point and watch the triangle change.`,
+`<strong>Sin and cos are simply coordinates.</strong><br><span class="cos-c">cos α</span> = x-coordinate of the point<br><span class="sin-c">sin α</span> = y-coordinate of the point<br><br>Therefore: sin²α + cos²α = 1. Always. It's the Pythagorean theorem!<br><br>➜ Drag the point to 30°. Sin = 0.5.`,
+`<strong>A radian = arc length on the unit circle.</strong><br>Full circumference = 2π ≈ 6.28, so full circle = 2π radians = 360°.<br>Radians aren't "another way to write degrees" — they are <strong>actual lengths</strong>.<br><br>➜ Watch the radian value while dragging. At 90° = π/2 ≈ 1.57.`,
+`<strong>A wave comes from circular motion.</strong><br>y-coordinate (<span class="sin-c">sin</span>) plotted to the right → a wave!<br>x-coordinate (<span class="cos-c">cos</span>) → same wave, shifted.<br><br>➜ Click "Animate" and watch the wave in real time.`,
+`<strong>Tangent = slope of the line from center to point.</strong><br><span class="tan-c">tan α</span> = <span class="sin-c">sin α</span> / <span class="cos-c">cos α</span> = y / x<br><br>So tan 45° = 1, tan 90° is undefined (vertical line).<br><br>➜ Enable "tan wave" and drag the point toward 90°.`,
+`<strong>4 quadrants determine the signs.</strong><br>I (0°–90°): <span class="sin-c">sin +</span>, <span class="cos-c">cos +</span><br>II (90°–180°): <span class="sin-c">sin +</span>, <span class="cos-c">cos −</span><br>III (180°–270°): <span class="sin-c">sin −</span>, <span class="cos-c">cos −</span><br>IV (270°–360°): <span class="sin-c">sin −</span>, <span class="cos-c">cos +</span><br><br>➜ Drag the point into each quadrant and watch the signs.`
+]};
+let trigCurrentStep = 0;
+function trigShowLesson(i) { trigCurrentStep=i; document.querySelectorAll('#t_steps .step-btn').forEach((b,j)=>b.classList.toggle('active',j===i)); $('t_lesson').innerHTML=trigLessons[currentLang][i]; }
+function trigBuildSteps() {
+    const names={sk:['1. Kružnica','2. Trojuholník','3. Sin & Cos','4. Radiány','5. Vlna','6. Tan','7. Kvadranty'],en:['1. Circle','2. Triangle','3. Sin & Cos','4. Radians','5. Wave','6. Tan','7. Quadrants']};
+    $('t_steps').innerHTML=names[currentLang].map((n,i)=>`<button class="step-btn${i===trigCurrentStep?' active':''}" onclick="trigShowLesson(${i})">${n}</button>`).join('');
+}
+
+// Trig challenges
+const trigChallenges = {
+sk:[
+{text:'Nájdi uhol, kde <span class="sin-c">sin = 0.5</span>',check:()=>Math.abs(Math.sin(t_angle)-.5)<.05},
+{text:'Nájdi uhol, kde <span class="cos-c">cos = 0</span>',check:()=>Math.abs(Math.cos(t_angle))<.05},
+{text:'Nájdi uhol, kde <span class="sin-c">sin</span> = <span class="cos-c">cos</span>',check:()=>Math.abs(Math.sin(t_angle)-Math.cos(t_angle))<.05},
+{text:'Nájdi uhol, kde <span class="tan-c">tan = 1</span>',check:()=>Math.abs(Math.cos(t_angle))>.01&&Math.abs(Math.tan(t_angle)-1)<.1},
+{text:'Nájdi uhol v III. kvadrante (180°–270°)',check:()=>{const d=((t_angle*180/Math.PI)%360+360)%360;return d>180&&d<270;}},
+{text:'Nájdi uhol, kde <span class="sin-c">sin = −1</span>',check:()=>Math.abs(Math.sin(t_angle)+1)<.05},
+{text:'Nájdi uhol, kde <span class="cos-c">cos = 0.5</span>',check:()=>Math.abs(Math.cos(t_angle)-.5)<.05},
+],
+en:[
+{text:'Find the angle where <span class="sin-c">sin = 0.5</span>',check:()=>Math.abs(Math.sin(t_angle)-.5)<.05},
+{text:'Find the angle where <span class="cos-c">cos = 0</span>',check:()=>Math.abs(Math.cos(t_angle))<.05},
+{text:'Find the angle where <span class="sin-c">sin</span> = <span class="cos-c">cos</span>',check:()=>Math.abs(Math.sin(t_angle)-Math.cos(t_angle))<.05},
+{text:'Find the angle where <span class="tan-c">tan = 1</span>',check:()=>Math.abs(Math.cos(t_angle))>.01&&Math.abs(Math.tan(t_angle)-1)<.1},
+{text:'Find an angle in quadrant III (180°–270°)',check:()=>{const d=((t_angle*180/Math.PI)%360+360)%360;return d>180&&d<270;}},
+{text:'Find the angle where <span class="sin-c">sin = −1</span>',check:()=>Math.abs(Math.sin(t_angle)+1)<.05},
+{text:'Find the angle where <span class="cos-c">cos = 0.5</span>',check:()=>Math.abs(Math.cos(t_angle)-.5)<.05},
+]};
+let trigChIdx=0, trigChSolved=false;
+function trigShowChallenge(){trigChSolved=false;$('t_chText').innerHTML=trigChallenges[currentLang][trigChIdx].text;$('t_chResult').classList.remove('solved');}
+function trigCheckChallenge(){if(trigChSolved)return;if(trigChallenges[currentLang][trigChIdx].check()){trigChSolved=true;$('t_chResult').classList.add('solved');}}
+$('t_chNext').addEventListener('click',()=>{trigChIdx=(trigChIdx+1)%trigChallenges[currentLang].length;trigShowChallenge();});
+
+// ============================================================
+// CONICS
+// ============================================================
+const c_mainC=$('c_mainC'),c_ctx=c_mainC.getContext('2d');
+const c_coneC=$('c_coneC'),c_cctx=c_coneC.getContext('2d');
+let c_W,c_H,c_CX,c_CY,c_BASE=120;
+let cc_W,cc_H;
+let c_ecc=0,c_ptAngle=Math.PI/4,c_ptBranch=1,c_dragging=false;
+let c_zoom=1.0;
+const c_L=1.2;
+
+function conResize(){
+    const p=c_mainC.parentElement,w=p.clientWidth-28;
+    c_W=Math.max(300,w);c_H=Math.max(280,Math.round(c_W*.6));c_CX=c_W/2;c_CY=c_H/2;c_BASE=Math.min(c_W,c_H)/3.3;
+    setupHiDPI(c_mainC,c_ctx,c_W,c_H);
+    const cp=c_coneC.parentElement;
+    cc_W=Math.max(200,Math.min(cp.clientWidth-28,400));cc_H=Math.round(cc_W*1.1);
+    setupHiDPI(c_coneC,c_cctx,cc_W,cc_H);
+}
+
+function c_isH(e){return e>1.01}function c_isP(e){return e>=.99&&e<=1.01}function c_isE(e){return e>.001&&e<.99}function c_isC(e){return e<.001}
+function c_getScale(e){
+    let s;
+    if(!c_isH(e)){s=c_BASE;}
+    else{const a=c_L/(e*e-1),c=a*e,b=Math.sqrt(c*c-a*a);s=Math.min((c_W-80)/(2*c+a),(c_H-60)/(Math.max(b*2,a*2)),c_BASE);}
+    return s*c_zoom;
+}
+function c_getPoint(th,e){if(e<.001)return{x:c_L*Math.cos(th),y:c_L*Math.sin(th)};const d=1+e*Math.cos(th);if(d<=.01)return null;const r=c_L/d;if(r>20)return null;return{x:r*Math.cos(th),y:r*Math.sin(th)};}
+function c_getOffset(e){
+    const S=c_getScale(e);let ox;
+    if(c_isH(e)){const a=c_L/(e*e-1);ox=c_CX+a*e*S;}
+    else if(c_isP(e))ox=c_CX-.3*S;
+    else{const cv=c_isC(e)?0:c_L*e/(1-e*e);ox=c_CX-cv*S;}
+    return{x:ox,y:c_CY,s:S};
+}
+
+function conDraw(){
+    const ctx=c_ctx,W=c_W,H=c_H,CX=c_CX,CY=c_CY,e=c_ecc,S=c_getScale(e);
+    ctx.clearRect(0,0,W,H);
+    // Grid
+    ctx.strokeStyle=themeColor('--grid');ctx.lineWidth=1;
+    for(let i=-5;i<=5;i++){if(i===0)continue;const gx=CX+i*S,gy=CY+i*S;if(gx>0&&gx<W){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}if(gy>0&&gy<H){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}}
+    // Axes
+    ctx.strokeStyle=themeColor('--axis');ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,CY);ctx.lineTo(W,CY);ctx.stroke();ctx.beginPath();ctx.moveTo(CX,0);ctx.lineTo(CX,H);ctx.stroke();
+    const _o=c_getOffset(e),oX=_o.x,oY=_o.y;
+    // Directrix
+    if(e>=.05){const dX=oX+(-c_L/e)*S;ctx.strokeStyle='#a78bfa66';ctx.lineWidth=2;ctx.setLineDash([8,5]);ctx.beginPath();ctx.moveTo(dX,20);ctx.lineTo(dX,H-20);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#a78bfa';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText(L('con_directrix'),dX,14);if(c_isH(e)){const d2=2*CX-dX;ctx.strokeStyle='#a78bfa66';ctx.lineWidth=2;ctx.setLineDash([8,5]);ctx.beginPath();ctx.moveTo(d2,20);ctx.lineTo(d2,H-20);ctx.stroke();ctx.setLineDash([]);}}
+    // Curve
+    ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
+    ctx.strokeStyle=themeColor('--curve-stroke');ctx.lineWidth=2.5;
+    if(c_isH(e)){const aH=c_L/(e*e-1),cH=aH*e,bH=Math.sqrt(cH*cH-aH*aH),st=600;for(const sign of[1,-1]){ctx.beginPath();let s=false;for(let i=0;i<=st;i++){const t=-1.5+(i/st)*3;const ct=Math.cos(t);if(Math.abs(ct)<.01){s=false;continue;}const x=sign*aH/ct,y=sign*bH*Math.tan(t);if(sign===1&&x<0||sign===-1&&x>0){s=false;continue;}const sx=CX+x*S,sy=CY-y*S;if(!s){ctx.moveTo(sx,sy);s=true;}else ctx.lineTo(sx,sy);}ctx.stroke();}}
+    else{ctx.beginPath();let s=false;for(let i=0;i<=1200;i++){const th=(i/1200)*Math.PI*2-Math.PI;const pt=c_getPoint(th,e);if(!pt){s=false;continue;}const sx=oX+pt.x*S,sy=oY-pt.y*S;if(!s){ctx.moveTo(sx,sy);s=true;}else ctx.lineTo(sx,sy);}ctx.stroke();}
+    ctx.restore();
+    // F1
+    ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(oX,oY,6,0,Math.PI*2);ctx.fill();ctx.fillStyle=themeColor('--axis-label');ctx.font='12px sans-serif';ctx.textAlign='left';ctx.fillText('F₁',oX+10,oY-8);
+    // F2
+    if(c_isE(e)){const cv=c_L*e/(1-e*e),f2=oX+2*cv*S;ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(f2,oY,6,0,Math.PI*2);ctx.fill();ctx.fillText('F₂',f2+10,oY-8);}
+    else if(c_isH(e)){const cv=c_L*e/(e*e-1),f2=CX-cv*S;ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(f2,oY,6,0,Math.PI*2);ctx.fill();ctx.fillText('F₂',f2+10,oY-8);}
+    // Point P
+    let px,py,pwx,pwy;
+    if(c_isH(e)){const aH=c_L/(e*e-1),cH=aH*e,bH=Math.sqrt(cH*cH-aH*aH),t=Math.max(-1.45,Math.min(1.45,c_ptAngle));pwx=c_ptBranch*aH/Math.cos(t)-cH;pwy=c_ptBranch*bH*Math.tan(t);px=CX+c_ptBranch*aH/Math.cos(t)*S;py=CY-pwy*S;}
+    else{const pt=c_getPoint(c_ptAngle,e);if(pt){pwx=pt.x;pwy=pt.y;px=oX+pt.x*S;py=oY-pt.y*S;}}
+    if(px!==undefined){
+        // Distance lines
+        ctx.strokeStyle='#f8717188';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(oX,oY);ctx.stroke();
+        let f2x=null;if(c_isE(e))f2x=oX+2*(c_L*e/(1-e*e))*S;else if(c_isH(e))f2x=CX-(c_L*e/(e*e-1))*S;
+        if(f2x!==null){ctx.strokeStyle='#60a5fa88';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(f2x,oY);ctx.stroke();}
+        if(e>=.05){const dX=oX+(-c_L/e)*S;ctx.strokeStyle='#a78bfa66';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(dX,py);ctx.stroke();ctx.setLineDash([]);}
+        ctx.fillStyle=isLight?'#222':'#fff';ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#34d399';ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();ctx.fillStyle=themeColor('--fg-dim');ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText('P',px+10,py-8);
+    }
+}
+
+function conDrawCone(){
+    const c=c_cctx,w=cc_W,h=cc_H,e=c_ecc;c.clearRect(0,0,w,h);
+    const rX=-.45,rY=.55,s3=Math.min(w,h)*.25,cx=w/2,cy=h/2;
+    function proj(x,y,z){const cY=Math.cos(rY),sY=Math.sin(rY),x1=x*cY+z*sY,z1=-x*sY+z*cY,cX=Math.cos(rX),sX=Math.sin(rX),y2=y*cX-z1*sX;return{x:cx+x1*s3,y:cy-y2*s3};}
+    const cH=.42,cHt=1.5,tA=Math.tan(cH);
+    function ring(yP,a){const r=Math.abs(yP)*tA;c.strokeStyle=a;c.lineWidth=1;c.beginPath();for(let i=0;i<=64;i++){const th=(i/64)*Math.PI*2,p=proj(r*Math.cos(th),yP,r*Math.sin(th));i===0?c.moveTo(p.x,p.y):c.lineTo(p.x,p.y);}c.stroke();}
+    const ec=themeColor('--axis');c.strokeStyle=ec;c.lineWidth=1.2;
+    for(let i=0;i<4;i++){const th=(i/4)*Math.PI*2+.3,ap=proj(0,0,0),rT=cHt*tA,pT=proj(rT*Math.cos(th),cHt,rT*Math.sin(th)),pB=proj(rT*Math.cos(th),-cHt,rT*Math.sin(th));c.beginPath();c.moveTo(ap.x,ap.y);c.lineTo(pT.x,pT.y);c.stroke();c.beginPath();c.moveTo(ap.x,ap.y);c.lineTo(pB.x,pB.y);c.stroke();}
+    ring(cHt,ec);ring(-cHt,ec);ring(cHt*.5,themeColor('--grid'));ring(-cHt*.5,themeColor('--grid'));
+    c.strokeStyle='#34d399';c.lineWidth=3;const st=300;
+    if(c_isH(e)){const off=.15+(e-1)*.25,yM=off/tA,pH=cHt,pW=cHt*tA;const cn=[proj(off,-pH,-pW),proj(off,-pH,pW),proj(off,pH,pW),proj(off,pH,-pW)];c.fillStyle='rgba(52,211,153,0.15)';c.beginPath();c.moveTo(cn[0].x,cn[0].y);for(let i=1;i<4;i++)c.lineTo(cn[i].x,cn[i].y);c.closePath();c.fill();for(const yS of[1,-1]){c.beginPath();let s2=false;for(let i=0;i<=st;i++){const y=yS*(yM+(i/st)*(cHt-yM)),z2=y*y*tA*tA-off*off;if(z2<0)continue;const z=Math.sqrt(z2),p=proj(off,y,z);if(!s2){c.moveTo(p.x,p.y);s2=true;}else c.lineTo(p.x,p.y);}for(let i=st;i>=0;i--){const y=yS*(yM+(i/st)*(cHt-yM)),z2=y*y*tA*tA-off*off;if(z2<0)continue;c.lineTo(proj(off,y,-Math.sqrt(z2)).x,proj(off,y,-Math.sqrt(z2)).y);}c.closePath();c.stroke();}}
+    else{const eA=Math.PI/2-cH;let beta;if(e<=.01)beta=0;else if(e<1)beta=e*eA*.95;else beta=eA;const tB=Math.tan(beta),d=.6,pr=tA*tB;c.beginPath();let s2=false;for(let i=0;i<=st;i++){const th=(i/st)*Math.PI*2,dn=1-pr*Math.cos(th);if(Math.abs(dn)<.01){s2=false;continue;}const y=d/dn;if(y<0||y>cHt){s2=false;continue;}const r=y*tA,p=proj(r*Math.cos(th),y,r*Math.sin(th));if(!s2){c.moveTo(p.x,p.y);s2=true;}else c.lineTo(p.x,p.y);}c.stroke();}
+    const ap=proj(0,0,0);c.fillStyle=themeColor('--fg-muted');c.beginPath();c.arc(ap.x,ap.y,3,0,Math.PI*2);c.fill();
+    let lk;if(c_isC(e))lk='con_cone_circle';else if(c_isE(e))lk='con_cone_ellipse';else if(c_isP(e))lk='con_cone_parabola';else lk='con_cone_hyperbola';
+    $('c_coneLabel').textContent=L(lk);
+}
+
+function conUpdateValues(){
+    const e=c_ecc;let tk;if(c_isC(e))tk='con_circle';else if(c_isE(e))tk='con_ellipse';else if(c_isP(e))tk='con_parabola';else tk='con_hyperbola';
+    $('c_vType').textContent=L(tk);$('c_typeLabel').textContent=L(tk);$('c_vEcc').textContent=e.toFixed(2);$('c_eccVal').textContent=e.toFixed(2);
+    let px,py;
+    if(c_isH(e)){const a=c_L/(e*e-1),c=a*e,b=Math.sqrt(c*c-a*a),t=Math.max(-1.45,Math.min(1.45,c_ptAngle));px=c_ptBranch*a/Math.cos(t)-c;py=c_ptBranch*b*Math.tan(t);}
+    else{const pt=c_getPoint(c_ptAngle,e);if(!pt)return;px=pt.x;py=pt.y;}
+    const d1=Math.sqrt(px*px+py*py);$('c_vDist1').textContent=d1.toFixed(3);
+    if(e>=.05){const dDir=Math.abs(px-(-c_L/e));$('c_vDistDir').textContent=dDir.toFixed(3);$('c_vRatio').textContent=(d1/dDir).toFixed(3);}else{$('c_vDistDir').textContent='—';$('c_vRatio').textContent='—';}
+    const pb=$('c_propBox');
+    if(c_isE(e)){const cv=c_L*e/(1-e*e),d2=Math.sqrt((px-2*cv)**2+py*py),sum=d1+d2;$('c_vDist2').textContent=d2.toFixed(3);$('c_vSumLabel').textContent=L('con_sum');$('c_vSum').textContent=sum.toFixed(3);pb.innerHTML=`<span class="color-dist1">${d1.toFixed(3)}</span> + <span class="color-dist2">${d2.toFixed(3)}</span> = <strong>${sum.toFixed(3)}</strong> <span class="check">✓ ${L('con_prop_const')}</span>`;}
+    else if(c_isH(e)){const cv=c_L*e/(e*e-1),d2=Math.sqrt((px-(-2*cv))**2+py*py),diff=Math.abs(d1-d2);$('c_vDist2').textContent=d2.toFixed(3);$('c_vSumLabel').textContent=L('con_diff');$('c_vSum').textContent=diff.toFixed(3);pb.innerHTML=`|<span class="color-dist1">${d1.toFixed(3)}</span> − <span class="color-dist2">${d2.toFixed(3)}</span>| = <strong>${diff.toFixed(3)}</strong> <span class="check">✓ ${L('con_prop_const')}</span>`;}
+    else if(c_isP(e)){$('c_vDist2').textContent='—';$('c_vSumLabel').textContent='—';$('c_vSum').textContent='—';pb.innerHTML=`<span class="color-dist1">d(P,F)</span> = <span class="color-dir">d(P,r)</span> = <strong>${d1.toFixed(3)}</strong> <span class="check">✓ ${L('con_prop_parabola_eq')}</span>`;}
+    else{$('c_vDist2').textContent='—';$('c_vSumLabel').textContent='—';$('c_vSum').textContent='—';pb.innerHTML=`${L('con_prop_circle')} <strong>${d1.toFixed(3)}</strong> <span class="check">✓</span>`;}
+    conCheckChallenge();
+}
+
+function conRender(){conDraw();conDrawCone();conUpdateValues();}
+
+// Conics interaction
+$('c_eccSlider').addEventListener('input',()=>{c_ecc=parseInt($('c_eccSlider').value)/100;conRender();});
+$('c_zoomSlider').addEventListener('input',()=>{c_zoom=parseInt($('c_zoomSlider').value)/100;$('c_zoomVal').textContent=(c_zoom).toFixed(1)+'×';conRender();});
+function c_getAngle(ev){const r=c_mainC.getBoundingClientRect(),e=c_ecc;if(c_isH(e)){const S=c_getScale(e),mx=(ev.clientX-r.left-c_CX)/S,my=-(ev.clientY-r.top-c_CY)/S,bH=Math.sqrt((c_L*e/(e*e-1))**2-(c_L/(e*e-1))**2);c_ptBranch=mx>=0?1:-1;return Math.atan(my/bH);}const o=c_getOffset(e);return Math.atan2(-(ev.clientY-r.top-o.y)/o.s,(ev.clientX-r.left-o.x)/o.s);}
+c_mainC.addEventListener('mousedown',ev=>{c_dragging=true;c_ptAngle=c_getAngle(ev);conRender();});
+window.addEventListener('mousemove',ev=>{if(!c_dragging)return;c_ptAngle=c_getAngle(ev);conRender();});
+window.addEventListener('mouseup',()=>{c_dragging=false;});
+c_mainC.addEventListener('touchstart',ev=>{ev.preventDefault();c_dragging=true;c_ptAngle=c_getAngle(ev.touches[0]);conRender();},{passive:false});
+window.addEventListener('touchmove',ev=>{if(!c_dragging)return;c_ptAngle=c_getAngle(ev.touches[0]);conRender();},{passive:false});
+window.addEventListener('touchend',()=>{c_dragging=false;});
+
+// Conics lessons
+const conLessons={
+sk:[
+`<strong>Kružnica, elipsa, parabola, hyperbola — to nie sú 4 rôzne veci.</strong> Je to jedna rodina kriviek. Všetky sa dajú opísať <strong>jedným číslom</strong> — excentricitou <strong>e</strong>.<br><br>➜ Posuň slider a sleduj, ako sa krivka plynulo mení.`,
+`<strong>Excentricita (e) = ako veľmi sa krivka líši od kruhu.</strong><br><span class="c-curve">e = 0</span> → kružnica<br><span class="c-curve">0 &lt; e &lt; 1</span> → elipsa<br><span class="c-curve">e = 1</span> → parabola<br><span class="c-curve">e &gt; 1</span> → hyperbola<br><br>➜ Pozri pomer d(P,F)/d(P,r) — vždy sa rovná e.`,
+`<strong>Kružnica (e=0) je špeciálny prípad elipsy.</strong><br>Elipsa má 2 <span class="c-focus">ohniská</span>. Pre každý bod: <span style="color:#f87171">d(P,F₁)</span> + <span style="color:#60a5fa">d(P,F₂)</span> = konštanta<br><br>➜ Nastav e medzi 0 a 1. Ťahaj bod a sleduj súčet vzdialeností.`,
+`<strong>Parabola (e=1) je hranica medzi uzavretým a otvoreným.</strong><br>Pre každý bod: vzdialenosť k ohnisku = vzdialenosť k riadiacej priamke.<br><br>➜ Nastav e = 1.00 a ťahaj bod.`,
+`<strong>Hyperbola (e>1) má dve vetvy.</strong><br>|<span style="color:#f87171">d(P,F₁)</span> − <span style="color:#60a5fa">d(P,F₂)</span>| = konštanta<br><br>➜ Nastav e > 1 a sleduj rozdiel vzdialeností.`,
+`<strong>Ohniská majú fyzikálny význam.</strong><br>Elipsa: šepkajúce galérie. Parabola: satelitná anténa. Hyperbola: GPS.<br><br>➜ Sleduj žlté body — ohniská.`,
+`<strong>Kužeľosečky sú všade.</strong><br>Planéty: elipsy. Kométy: paraboly/hyperboly. Svetlomety: paraboly. GPS: hyperboly.<br><br>➜ Skús e ≈ 0.017 — obežná dráha Zeme.`
+],
+en:[
+`<strong>Circle, ellipse, parabola, hyperbola — these are not 4 different things.</strong> They are one family of curves, all described by <strong>one number</strong> — eccentricity <strong>e</strong>.<br><br>➜ Move the slider and watch the curve change smoothly.`,
+`<strong>Eccentricity (e) = how much the curve differs from a circle.</strong><br><span class="c-curve">e = 0</span> → circle<br><span class="c-curve">0 &lt; e &lt; 1</span> → ellipse<br><span class="c-curve">e = 1</span> → parabola<br><span class="c-curve">e &gt; 1</span> → hyperbola<br><br>➜ Watch the ratio d(P,F)/d(P,r) — it always equals e.`,
+`<strong>A circle (e=0) is a special case of an ellipse.</strong><br>An ellipse has 2 <span class="c-focus">foci</span>. For every point: <span style="color:#f87171">d(P,F₁)</span> + <span style="color:#60a5fa">d(P,F₂)</span> = constant<br><br>➜ Set e between 0 and 1. Drag the point and watch the sum of distances.`,
+`<strong>Parabola (e=1) is the boundary between closed and open.</strong><br>For every point: distance to focus = distance to directrix.<br><br>➜ Set e = 1.00 and drag the point.`,
+`<strong>Hyperbola (e>1) has two branches.</strong><br>|<span style="color:#f87171">d(P,F₁)</span> − <span style="color:#60a5fa">d(P,F₂)</span>| = constant<br><br>➜ Set e > 1 and watch the difference of distances.`,
+`<strong>Foci have physical meaning.</strong><br>Ellipse: whispering galleries. Parabola: satellite dish. Hyperbola: GPS.<br><br>➜ Watch the yellow dots — those are the foci.`,
+`<strong>Conic sections are everywhere.</strong><br>Planets: ellipses. Comets: parabolas/hyperbolas. Headlights: parabolas. GPS: hyperbolas.<br><br>➜ Try e ≈ 0.017 ��� Earth's orbit.`
+]};
+let conCurrentStep=0;
+function conShowLesson(i){conCurrentStep=i;document.querySelectorAll('#c_steps .step-btn').forEach((b,j)=>b.classList.toggle('active',j===i));$('c_lesson').innerHTML=conLessons[currentLang][i];}
+function conBuildSteps(){
+    const n={sk:['1. Jedna rodina','2. Excentricita','3. Kružnica & Elipsa','4. Parabola','5. Hyperbola','6. Ohniská','7. V praxi'],en:['1. One family','2. Eccentricity','3. Circle & Ellipse','4. Parabola','5. Hyperbola','6. Foci','7. In practice']};
+    $('c_steps').innerHTML=n[currentLang].map((nm,i)=>`<button class="step-btn${i===conCurrentStep?' active':''}" onclick="conShowLesson(${i})">${nm}</button>`).join('');
+}
+
+const conChallenges={sk:[
+{text:'Nastav <span class="c-curve">e = 0</span> — nájdi kružnicu',check:()=>c_isC(c_ecc)},
+{text:'Nastav slider tak, aby bola <span class="c-curve">elipsa</span>',check:()=>c_isE(c_ecc)},
+{text:'Nájdi <span class="c-curve">parabolu</span> (e = 1)',check:()=>c_isP(c_ecc)},
+{text:'Nastav <span class="c-curve">hyperbolu</span> (e > 1)',check:()=>c_isH(c_ecc)},
+{text:'Nastav e ≈ 0.02 — obežná dráha Zeme',check:()=>c_ecc>=.01&&c_ecc<=.03},
+],en:[
+{text:'Set <span class="c-curve">e = 0</span> — find the circle',check:()=>c_isC(c_ecc)},
+{text:'Set the slider to get an <span class="c-curve">ellipse</span>',check:()=>c_isE(c_ecc)},
+{text:'Find the <span class="c-curve">parabola</span> (e = 1)',check:()=>c_isP(c_ecc)},
+{text:'Set a <span class="c-curve">hyperbola</span> (e > 1)',check:()=>c_isH(c_ecc)},
+{text:'Set e ≈ 0.02 — Earth\'s orbit',check:()=>c_ecc>=.01&&c_ecc<=.03},
+]};
+let conChIdx=0,conChSolved=false;
+function conShowChallenge(){conChSolved=false;$('c_chText').innerHTML=conChallenges[currentLang][conChIdx].text;$('c_chResult').classList.remove('solved');}
+function conCheckChallenge(){if(conChSolved)return;if(conChallenges[currentLang][conChIdx].check()){conChSolved=true;$('c_chResult').classList.add('solved');}}
+$('c_chNext').addEventListener('click',()=>{conChIdx=(conChIdx+1)%conChallenges[currentLang].length;conShowChallenge();});
+
+// ============================================================
+// COMPLEX NUMBERS
+// ============================================================
+const x_mainC=$('x_mainC'),x_ctx=x_mainC.getContext('2d');
+const x_pwC=$('x_powerC'),x_pctx=x_pwC.getContext('2d');
+let xCW,xCH,xCX,xCY,xSCALE;
+let xPW,xPH,xPCX,xPCY,xPSCALE;
+let xZr=1,xZi=1,xWm=1,xWa=0;
+let x_anim=false,x_animId=null,x_dragZ=false,x_dragW=false;
+
+function cpxResize(){
+    const p=x_mainC.parentElement,w=p.clientWidth-28;
+    xCW=Math.max(300,w);xCH=Math.max(300,Math.min(xCW,Math.round(window.innerHeight*.6)));
+    xCX=xCW/2;xCY=xCH/2;xSCALE=Math.min(xCW,xCH)/5.6;
+    setupHiDPI(x_mainC,x_ctx,xCW,xCH);
+    const pp=x_pwC.parentElement;const pw=pp.clientWidth-28;
+    xPW=Math.max(300,pw);xPH=Math.max(180,Math.round(xPW*.45));
+    xPCX=xPW/2;xPCY=xPH/2;xPSCALE=xPH/9;
+    setupHiDPI(x_pwC,x_pctx,xPW,xPH);
+}
+
+function xWr(){return xWm*Math.cos(xWa);}function xWi(){return xWm*Math.sin(xWa);}
+function xMul(){return{re:xZr*xWr()-xZi*xWi(),im:xZr*xWi()+xZi*xWr()};}
+function xFmt(re,im){const r=Math.abs(re)<.005?0:Math.round(re*100)/100,i=Math.abs(im)<.005?0:Math.round(im*100)/100;if(i===0)return r.toFixed(2);if(r===0)return(i===1?'':i===-1?'−':i.toFixed(2))+'i';return r.toFixed(2)+(i>0?' + ':' − ')+(Math.abs(i)===1?'':Math.abs(i).toFixed(2))+'i';}
+function xDeg(r){return((r*180/Math.PI)%360+360)%360;}
+function xToS(re,im){return[xCX+re*xSCALE,xCY-im*xSCALE];}
+function xSnap(v){const n=[0,.5,1,-.5,-1,1.5,-1.5,2,-2,Math.sqrt(2)/2,-Math.sqrt(2)/2,Math.sqrt(3)/2,-Math.sqrt(3)/2];for(const x of n)if(Math.abs(v-x)<.08)return x;return v;}
+function xPow(re,im,n){let rr=re,ri=im;for(let k=1;k<n;k++){const nr=rr*re-ri*im,ni=rr*im+ri*re;rr=nr;ri=ni;}return{re:rr,im:ri};}
+
+function cpxDrawMain(){
+    const ctx=x_ctx,W=xCW,H=xCH,CX=xCX,CY=xCY,S=xSCALE;
+    ctx.clearRect(0,0,W,H);
+    const mxR=Math.floor(CX/S),mxI=Math.floor(CY/S);
+    ctx.strokeStyle=themeColor('--grid');ctx.lineWidth=1;
+    for(let i=-mxR;i<=mxR;i++){if(!i)continue;const x=CX+i*S;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let i=-mxI;i<=mxI;i++){if(!i)continue;const y=CY-i*S;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.strokeStyle=themeColor('--axis');ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,CY);ctx.lineTo(W,CY);ctx.stroke();ctx.beginPath();ctx.moveTo(CX,0);ctx.lineTo(CX,H);ctx.stroke();
+    ctx.fillStyle=themeColor('--axis-label');ctx.font='11px sans-serif';ctx.textAlign='center';
+    for(let i=-mxR;i<=mxR;i++){if(!i)continue;const x=CX+i*S;if(x>20&&x<W-20)ctx.fillText(i,x,CY+16);}
+    for(let i=-mxI;i<=mxI;i++){if(!i)continue;const y=CY-i*S;if(y>14&&y<H-10)ctx.fillText(i+'i',CX-18,y+4);}
+    ctx.fillText('Re',W-16,CY-8);ctx.fillText('Im',CX+12,14);
+    if($('x_showUnit').checked){ctx.strokeStyle=isLight?'#ccc':'#2a3a4a';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(CX,CY,S,0,Math.PI*2);ctx.stroke();}
+    const sP=$('x_showProd').checked,sC=$('x_showConj').checked;
+    const wr=xWr(),wi=xWi(),[wx,wy]=xToS(wr,wi);
+    ctx.strokeStyle='#34d39988';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(wx,wy);ctx.stroke();
+    const[zx,zy]=xToS(xZr,xZi);
+    ctx.strokeStyle='#c084fc88';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(zx,zy);ctx.stroke();
+    if(sP){const p=xMul(),[px,py]=xToS(p.re,p.im);ctx.strokeStyle='#f59e0b66';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(px,py);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.fill();ctx.fillStyle=isLight?'#fff':'#000';ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f59e0b';ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText('z·w',px+10,py-6);}
+    if(sC){const[cx,cy]=xToS(xZr,-xZi);ctx.strokeStyle='#fb718566';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(cx,cy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#fb7185';ctx.beginPath();ctx.arc(cx,cy,6,0,Math.PI*2);ctx.fill();ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText('z̄',cx+10,cy-6);}
+    // Projections
+    ctx.setLineDash([3,3]);ctx.lineWidth=1;ctx.strokeStyle='#60a5fa55';ctx.beginPath();ctx.moveTo(zx,CY);ctx.lineTo(zx,zy);ctx.stroke();ctx.strokeStyle='#f8717155';ctx.beginPath();ctx.moveTo(CX,zy);ctx.lineTo(zx,zy);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle='#60a5fa';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(zx,CY);ctx.stroke();
+    ctx.strokeStyle='#f87171';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(zx,CY);ctx.lineTo(zx,zy);ctx.stroke();
+    // Angle
+    const argZ=Math.atan2(xZi,xZr);
+    if(Math.sqrt(xZr*xZr+xZi*xZi)>.1){ctx.strokeStyle='#a78bfa55';ctx.lineWidth=2;ctx.beginPath();ctx.arc(CX,CY,25,0,-argZ,argZ>0);ctx.stroke();ctx.fillStyle='#a78bfa';ctx.font='11px sans-serif';ctx.textAlign='center';const la=argZ/2;ctx.fillText(Math.round(xDeg(argZ))+'°',CX+Math.cos(-la)*38,CY+Math.sin(-la)*38+3);}
+    // Dots
+    ctx.fillStyle=isLight?'#333':'#fff';ctx.beginPath();ctx.arc(wx,wy,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#34d399';ctx.beginPath();ctx.arc(wx,wy,5,0,Math.PI*2);ctx.fill();ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText('w',wx+10,wy-6);
+    ctx.fillStyle=isLight?'#333':'#fff';ctx.beginPath();ctx.arc(zx,zy,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#c084fc';ctx.beginPath();ctx.arc(zx,zy,5,0,Math.PI*2);ctx.fill();ctx.fillText('z',zx+10,zy-8);
+    ctx.font='10px monospace';ctx.fillStyle='#60a5fa';ctx.textAlign='center';ctx.fillText('Re',(CX+zx)/2,CY+(xZi>=0?14:-6));ctx.fillStyle='#f87171';ctx.textAlign=xZr>=0?'left':'right';ctx.fillText('Im',zx+(xZr>=0?6:-18),(CY+zy)/2+3);
+}
+
+const PW_COLS=['#c084fc','#a78bfa','#818cf8','#6366f1','#4f46e5','#7c3aed','#9333ea','#a855f7','#d946ef','#ec4899','#f43f5e','#ef4444'];
+const SUPS=['¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹','¹⁰','¹¹','¹²'];
+
+function cpxDrawPower(){
+    const ctx=x_pctx,W=xPW,H=xPH,CX=xPCX,CY=xPCY,PS=xPSCALE;
+    const n=parseInt($('x_slN').value);ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=themeColor('--grid');ctx.lineWidth=1;
+    for(let i=-Math.floor(W/(2*PS));i<=Math.floor(W/(2*PS));i++){if(!i)continue;const x=CX+i*PS;if(x>0&&x<W){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}}
+    for(let i=-Math.floor(H/(2*PS));i<=Math.floor(H/(2*PS));i++){if(!i)continue;const y=CY-i*PS;if(y>0&&y<H){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}}
+    ctx.strokeStyle=themeColor('--axis');ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,CY);ctx.lineTo(W,CY);ctx.stroke();ctx.beginPath();ctx.moveTo(CX,0);ctx.lineTo(CX,H);ctx.stroke();
+    ctx.strokeStyle=isLight?'#ddd':'#1e293b';ctx.lineWidth=1;ctx.beginPath();ctx.arc(CX,CY,PS,0,Math.PI*2);ctx.stroke();
+    const pws=[];for(let k=1;k<=n;k++)pws.push(xPow(xZr,xZi,k));
+    let mx=1;pws.forEach(p=>{mx=Math.max(mx,Math.abs(p.re),Math.abs(p.im));});mx=Math.max(mx,Math.abs(xZr),Math.abs(xZi));
+    const as=Math.min(PS,(Math.min(W,H)/2-30)/mx);
+    function ts(re,im){return[CX+re*as,CY-im*as];}
+    ctx.strokeStyle=isLight?'#c084fc44':'#c084fc33';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(CX,CY);
+    for(let k=0;k<=n;k++){const pk=k===0?{re:xZr,im:xZi}:pws[k-1];const[px,py]=ts(pk.re,pk.im);ctx.lineTo(px,py);}ctx.stroke();
+    let iH='',cH='';
+    for(let k=0;k<n;k++){const p=pws[k],[px,py]=ts(p.re,p.im),col=PW_COLS[k%12],mg=Math.sqrt(p.re*p.re+p.im*p.im),ag=Math.atan2(p.im,p.re);
+    ctx.strokeStyle=col+'55';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(px,py);ctx.stroke();ctx.setLineDash([]);
+    const ds=k===n-1?8:5;ctx.fillStyle=col;ctx.beginPath();ctx.arc(px,py,ds,0,Math.PI*2);ctx.fill();
+    if(k===n-1){ctx.fillStyle=isLight?'#fff':'#000';ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill();}
+    ctx.fillStyle=col;ctx.font=k===n-1?'bold 12px sans-serif':'10px sans-serif';ctx.textAlign='left';ctx.fillText('z'+SUPS[k],px+8,py-6);
+    iH+=`<div class="pw-step"><span class="pw-label" style="color:${col}">z${SUPS[k]}</span><span class="pw-val">${xFmt(p.re,p.im)}</span><span class="pw-polar">|z${SUPS[k]}| = ${mg.toFixed(2)}, arg = ${Math.round(xDeg(ag))}°</span></div>`;
+    cH+=`<span class="pc-dot" style="background:${col}"></span><span>z${SUPS[k]}</span>`;}
+    ctx.fillStyle=isLight?'#666':'#888';ctx.beginPath();ctx.arc(CX,CY,3,0,Math.PI*2);ctx.fill();
+    const mZ=Math.sqrt(xZr*xZr+xZi*xZi),aZd=Math.round(xDeg(Math.atan2(xZi,xZr))),fp=pws[n-1],mF=Math.sqrt(fp.re*fp.re+fp.im*fp.im),aF=Math.round(xDeg(Math.atan2(fp.im,fp.re)));
+    ctx.fillStyle=isLight?'#333':'#ddd';ctx.font='12px monospace';ctx.textAlign='right';ctx.fillText(`|z|=${mZ.toFixed(2)}, arg(z)=${aZd}°`,W-10,18);
+    ctx.fillStyle=PW_COLS[(n-1)%12];const sN=['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹','¹⁰','¹¹','¹²'][n]||n;
+    ctx.fillText(`|z|${sN}=${mF.toFixed(2)}, ${n}·${aZd}°=${aF}°`,W-10,34);
+    $('x_pwInfo').innerHTML=iH;$('x_pwColors').innerHTML=cH;
+}
+
+function cpxUpdateValues(){
+    const mZ=Math.sqrt(xZr*xZr+xZi*xZi),aZ=Math.atan2(xZi,xZr);
+    $('x_valZ').textContent=xFmt(xZr,xZi);$('x_valMagZ').textContent=mZ.toFixed(3);$('x_valArgZ').textContent=Math.round(xDeg(aZ))+'°';
+    $('x_valW').textContent=xFmt(xWr(),xWi());$('x_valMagW').textContent=xWm.toFixed(3);$('x_valArgW').textContent=Math.round(xDeg(xWa))+'°';
+    const p=xMul(),mP=Math.sqrt(p.re*p.re+p.im*p.im),aP=Math.atan2(p.im,p.re);
+    $('x_valProd').textContent=xFmt(p.re,p.im);$('x_valMagP').textContent=mP.toFixed(3);$('x_valArgP').textContent=Math.round(xDeg(aP))+'°';
+    $('x_multExplain').innerHTML=`<span class="color-z">${xFmt(xZr,xZi)}</span> <span style="color:var(--fg-dim)">·</span> <span class="color-w">${xFmt(xWr(),xWi())}</span> <span style="color:var(--fg-dim)">=</span> <span class="color-product">${xFmt(p.re,p.im)}</span><span style="color:var(--fg-dim);margin-left:16px;font-size:.72rem;">|z|·|w|=${mZ.toFixed(2)}·${xWm.toFixed(2)}=${mP.toFixed(2)} | arg(z)+arg(w)=${Math.round(xDeg(aZ))}°+${Math.round(xDeg(xWa))}°=${Math.round(xDeg(aP))}°</span>`;
+    cpxCheckChallenge();
+}
+
+function cpxRender(){cpxDrawMain();cpxDrawPower();cpxUpdateValues();}
+
+// Complex interaction
+function x_getC(e){const r=x_mainC.getBoundingClientRect();return{re:(e.clientX-r.left-xCX)/xSCALE,im:-(e.clientY-r.top-xCY)/xSCALE};}
+function x_dist(a,b,c,d){return Math.sqrt((a-c)**2+(b-d)**2);}
+x_mainC.addEventListener('mousedown',e=>{const c=x_getC(e),[zx,zy]=xToS(xZr,xZi),[wx,wy]=xToS(xWr(),xWi());const r=x_mainC.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;if(x_dist(mx,my,zx,zy)<20)x_dragZ=true;else if(x_dist(mx,my,wx,wy)<20)x_dragW=true;else{x_dragZ=true;xZr=xSnap(c.re);xZi=xSnap(c.im);}if(x_anim)x_stopA();cpxRender();});
+window.addEventListener('mousemove',e=>{if(!x_dragZ&&!x_dragW)return;const c=x_getC(e);if(x_dragZ){xZr=xSnap(c.re);xZi=xSnap(c.im);}else{const r=xSnap(c.re),i=xSnap(c.im);xWm=Math.sqrt(r*r+i*i);xWa=Math.atan2(i,r);xSyncSl();}cpxRender();});
+window.addEventListener('mouseup',()=>{x_dragZ=false;x_dragW=false;});
+x_mainC.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0],c=x_getC(t),[zx,zy]=xToS(xZr,xZi),[wx,wy]=xToS(xWr(),xWi());const r=x_mainC.getBoundingClientRect(),mx=t.clientX-r.left,my=t.clientY-r.top;if(x_dist(mx,my,zx,zy)<30)x_dragZ=true;else if(x_dist(mx,my,wx,wy)<30)x_dragW=true;else{x_dragZ=true;xZr=xSnap(c.re);xZi=xSnap(c.im);}if(x_anim)x_stopA();cpxRender();},{passive:false});
+window.addEventListener('touchmove',e=>{if(!x_dragZ&&!x_dragW)return;const t=e.touches[0],c=x_getC(t);if(x_dragZ){xZr=xSnap(c.re);xZi=xSnap(c.im);}else{const r=xSnap(c.re),i=xSnap(c.im);xWm=Math.sqrt(r*r+i*i);xWa=Math.atan2(i,r);xSyncSl();}cpxRender();},{passive:false});
+window.addEventListener('touchend',()=>{x_dragZ=false;x_dragW=false;});
+
+// Sliders
+function xSyncSl(){$('x_slArgW').value=Math.round(xDeg(xWa));$('x_slMagW').value=Math.round(xWm*100);$('x_slArgWVal').textContent=Math.round(xDeg(xWa))+'°';$('x_slMagWVal').textContent=xWm.toFixed(2);}
+$('x_slArgW').addEventListener('input',()=>{xWa=parseFloat($('x_slArgW').value)*Math.PI/180;$('x_slArgWVal').textContent=$('x_slArgW').value+'°';cpxRender();});
+$('x_slMagW').addEventListener('input',()=>{xWm=parseFloat($('x_slMagW').value)/100;$('x_slMagWVal').textContent=xWm.toFixed(2);cpxRender();});
+$('x_slN').addEventListener('input',()=>{$('x_slNVal').textContent=$('x_slN').value;cpxDrawPower();});
+
+function x_startA(){x_anim=true;$('x_btnAnim').textContent=L('cpx_pause');$('x_btnAnim').classList.add('active');function s(){xWa+=.015;if(xWa>Math.PI*2)xWa-=Math.PI*2;xSyncSl();cpxRender();x_animId=requestAnimationFrame(s);}x_animId=requestAnimationFrame(s);}
+function x_stopA(){x_anim=false;$('x_btnAnim').textContent=L('cpx_rotate');$('x_btnAnim').classList.remove('active');cancelAnimationFrame(x_animId);}
+$('x_btnAnim').addEventListener('click',()=>{x_anim?x_stopA():x_startA();});
+$('x_btnReset').addEventListener('click',()=>{x_stopA();xZr=1;xZi=1;xWm=1;xWa=0;xSyncSl();cpxRender();});
+$('x_showUnit').addEventListener('change',cpxRender);$('x_showProd').addEventListener('change',cpxRender);$('x_showConj').addEventListener('change',cpxRender);
+
+// Complex lessons
+const cpxLessons={
+sk:[
+`<strong>Komplexné číslo = bod v 2D rovine.</strong><br><span class="z-c">z = a + bi</span>: <span class="re-c">a</span> = reálna, <span class="im-c">b</span> = imaginárna časť.<br><br>➜ Ťahaj <span class="z-c">fialový bod z</span> a sleduj súradnice.`,
+`<strong>Polárny tvar: veľkosť + uhol.</strong><br><span class="color-mag">|z| = r = √(a² + b²)</span><br><span class="color-arg">arg(z) = θ = arctan(b/a)</span><br><br>➜ Ťahaj z po kruhu — uhol sa mení, veľkosť zostáva.`,
+`<strong>Násobenie = rotácia + škálovanie.</strong><br>|z·w| = |z|·|w| — veľkosti sa násobia<br>arg(z·w) = arg(z)+arg(w) — uhly sa sčítajú<br><br>➜ Použi slidery na zmenu w.`,
+`<strong>Číslo na jednotkovej kružnici = čistá rotácia.</strong><br>Ak |w| = 1, násobenie len otočí.<br><br>➜ Nastav veľkosť w na 1 a meň uhol.`,
+`<strong>i² = −1 dáva geometrický zmysel.</strong><br>i = rotácia o 90°. i·i = 180° = −1.<br>i³ = −i, i⁴ = 1.<br><br>➜ Nastav z = 1 a uhol w na 90°.`,
+`<strong>Konjugát z̄ = zrkadlo cez os x.</strong><br>z = a+bi → z̄ = a−bi<br>z·z̄ = |z|²<br><br>➜ Zapni „Konjugát" a ťahaj z.`,
+`<strong>Umocňovanie = opakovaná rotácia.</strong><br>zⁿ = rⁿ · e^(inθ)<br>Veľkosť sa umocní, uhol sa vynásobí.<br><br>➜ Nastav z na kružnicu a meň exponent.`,
+`<strong>Eulerova formula: e^(iθ) = cos θ + i sin θ</strong><br>e^(iπ) = −1 (Eulerova identita).<br><br>➜ Ťahaj z po jednotkovej kružnici = ťaháš e^(iθ).`
+],
+en:[
+`<strong>A complex number = a point in 2D.</strong><br><span class="z-c">z = a + bi</span>: <span class="re-c">a</span> = real, <span class="im-c">b</span> = imaginary part.<br><br>➜ Drag the <span class="z-c">purple point z</span> and watch the coordinates.`,
+`<strong>Polar form: magnitude + angle.</strong><br><span class="color-mag">|z| = r = √(a² + b²)</span><br><span class="color-arg">arg(z) = θ = arctan(b/a)</span><br><br>➜ Drag z along a circle — angle changes, magnitude stays.`,
+`<strong>Multiplication = rotation + scaling.</strong><br>|z·w| = |z|·|w| — magnitudes multiply<br>arg(z·w) = arg(z)+arg(w) — angles add up<br><br>➜ Use the sliders to change w.`,
+`<strong>A number on the unit circle = pure rotation.</strong><br>If |w| = 1, multiplication only rotates.<br><br>➜ Set magnitude of w to 1 and change the angle.`,
+`<strong>i² = −1 makes geometric sense.</strong><br>i = rotation by 90°. i·i = 180° = −1.<br>i³ = −i, i⁴ = 1.<br><br>➜ Set z = 1 and angle of w to 90°.`,
+`<strong>Conjugate z̄ = mirror across x-axis.</strong><br>z = a+bi → z̄ = a−bi<br>z·z̄ = |z|²<br><br>➜ Enable "Conjugate" and drag z.`,
+`<strong>Exponentiation = repeated rotation.</strong><br>zⁿ = rⁿ · e^(inθ)<br>Magnitude is raised to power, angle is multiplied.<br><br>➜ Set z on the unit circle and change the exponent.`,
+`<strong>Euler's formula: e^(iθ) = cos θ + i sin θ</strong><br>e^(iπ) = −1 (Euler's identity).<br><br>➜ Drag z along the unit circle = dragging e^(iθ).`
+]};
+let cpxCurrentStep=0;
+function cpxShowLesson(i){cpxCurrentStep=i;document.querySelectorAll('#x_steps .step-btn').forEach((b,j)=>b.classList.toggle('active',j===i));$('x_lesson').innerHTML=cpxLessons[currentLang][i];}
+function cpxBuildSteps(){
+    const n={sk:['1. Rovina','2. Polárny tvar','3. Násobenie','4. Rotácia','5. i²=−1','6. Konjugát','7. Umocňovanie','8. Euler'],en:['1. Plane','2. Polar form','3. Multiplication','4. Rotation','5. i²=−1','6. Conjugate','7. Powers','8. Euler']};
+    $('x_steps').innerHTML=n[currentLang].map((nm,i)=>`<button class="step-btn${i===cpxCurrentStep?' active':''}" onclick="cpxShowLesson(${i})">${nm}</button>`).join('');
+}
+
+const cpxChallenges={sk:[
+{text:'Posuň <span class="color-z">z</span> na <span class="color-re">2 + 0i</span>',check:()=>Math.abs(xZr-2)<.15&&Math.abs(xZi)<.15},
+{text:'Posuň <span class="color-z">z</span> na <span class="color-im">i</span>',check:()=>Math.abs(xZr)<.15&&Math.abs(xZi-1)<.15},
+{text:'Nastav <span class="color-w">w = i</span> (uhol 90°, veľkosť 1)',check:()=>Math.abs(xWm-1)<.1&&Math.abs(xWa-Math.PI/2)<.1},
+{text:'Nájdi z kde <span class="color-mag">|z| = 2</span>',check:()=>Math.abs(Math.sqrt(xZr*xZr+xZi*xZi)-2)<.15},
+{text:'Nastav z = i, exponent 4 — aký je i⁴?',check:()=>{const p=xPow(xZr,xZi,parseInt($('x_slN').value));return Math.abs(xZr)<.15&&Math.abs(xZi-1)<.15&&parseInt($('x_slN').value)===4&&Math.abs(p.re-1)<.15&&Math.abs(p.im)<.15;}},
+],en:[
+{text:'Move <span class="color-z">z</span> to <span class="color-re">2 + 0i</span>',check:()=>Math.abs(xZr-2)<.15&&Math.abs(xZi)<.15},
+{text:'Move <span class="color-z">z</span> to <span class="color-im">i</span>',check:()=>Math.abs(xZr)<.15&&Math.abs(xZi-1)<.15},
+{text:'Set <span class="color-w">w = i</span> (angle 90°, magnitude 1)',check:()=>Math.abs(xWm-1)<.1&&Math.abs(xWa-Math.PI/2)<.1},
+{text:'Find z where <span class="color-mag">|z| = 2</span>',check:()=>Math.abs(Math.sqrt(xZr*xZr+xZi*xZi)-2)<.15},
+{text:'Set z = i, exponent 4 — what is i⁴?',check:()=>{const p=xPow(xZr,xZi,parseInt($('x_slN').value));return Math.abs(xZr)<.15&&Math.abs(xZi-1)<.15&&parseInt($('x_slN').value)===4&&Math.abs(p.re-1)<.15&&Math.abs(p.im)<.15;}},
+]};
+let cpxChIdx=0,cpxChSolved=false;
+function cpxShowChallenge(){cpxChSolved=false;$('x_chText').innerHTML=cpxChallenges[currentLang][cpxChIdx].text;$('x_chResult').classList.remove('solved');}
+function cpxCheckChallenge(){if(cpxChSolved)return;if(cpxChallenges[currentLang][cpxChIdx].check()){cpxChSolved=true;$('x_chResult').classList.add('solved');}}
+$('x_chNext').addEventListener('click',()=>{cpxChIdx=(cpxChIdx+1)%cpxChallenges[currentLang].length;cpxShowChallenge();});
+
+// ============================================================
+// INIT
+// ============================================================
+function buildAllSteps(){ trigBuildSteps(); conBuildSteps(); cpxBuildSteps(); }
+// Override applyLang to rebuild steps
+const _origApply = applyLang;
+applyLang = function() {
+    buildAllSteps();
+    _origApply();
+};
+
+buildAllSteps();
+trigResize(); conResize(); cpxResize();
+trigShowLesson(0); trigShowChallenge();
+conShowLesson(0); conShowChallenge();
+cpxShowLesson(0); cpxShowChallenge(); xSyncSl();
+$('c_explain').innerHTML = L('con_explain');
+switchTab('trig');
+</script>
+</body>
+</html>

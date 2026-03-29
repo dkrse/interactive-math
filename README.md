@@ -1,40 +1,70 @@
 # Interactive Math — Understand it visually
 
-Interactive web applications for learning and truly understanding math through visual exploration. No build tools, no dependencies — just open in a browser.
+One self-contained HTML file with three interactive math visualizations. No build tools, no dependencies, no frameworks — just open `src/math.html` in a browser.
 
-## Trigonometry
+**[Open it](src/math.html)** | SK/EN | Light/Dark | Mobile-friendly
 
-Most people memorize trig formulas without understanding where they come from. Drag a point around the unit circle and see everything connected in real time.
+## What's inside
 
-- **Unit circle** with live right triangle (sin, cos, hypotenuse)
-- **Wave visualization** — see how sin/cos waves emerge from circular motion
-- **Pythagorean identity** sin² + cos² = 1 computed live
-- **Snap to notable angles** (0°, 30°, 45°, 60°, 90°, ...) with markers
-- **Interactive challenges** — "find the angle where sin = 0.5"
-- **7 step-by-step lessons**
+### Trigonometry
 
-## Conic Sections
+Drag a point around the unit circle. See sin, cos, tan as actual geometry — not formulas to memorize.
 
-People learn circle, ellipse, parabola, and hyperbola as 4 separate things. They're actually one family controlled by a single number — eccentricity.
+- Unit circle with live right triangle
+- Sin/cos/tan wave visualization from circular motion
+- Pythagorean identity sin² + cos² = 1 verified live
+- Snap to notable angles (30°, 45°, 60°, 90°...)
+- 7 lessons, 7 challenges
 
-- **Eccentricity slider** (0 → 2) — watch the curve morph smoothly
-- **3D double cone** with the intersection curve rendered on the cone surface — circle, ellipse, parabola, or hyperbola depending on the cutting plane
-- **Draggable point** with live distance measurements to foci and directrix
-- **Focus-directrix ratio** verified in real time (always equals e)
-- **Ellipse sum / Hyperbola difference** of distances — proven live
-- **Interactive challenges** — "find Earth's orbit eccentricity", "click the left branch"
-- **7 step-by-step lessons**
+### Conic Sections
 
-## Files
+One slider morphs a circle into an ellipse, parabola, and hyperbola. They're all one family.
 
-| File | Topic | Language |
-|------|-------|----------|
-| `src/trig_sk.html` | Trigonometry | Slovak |
-| `src/trig_en.html` | Trigonometry | English |
-| `src/conics_sk.html` | Conic Sections | Slovak |
-| `src/conics_en.html` | Conic Sections | English |
+- Eccentricity slider (0 → 2.00) — smooth morphing
+- 3D cone with cutting plane rendered in real time
+- Zoom control (0.2×–1.0×) to see everything at once
+- Live distance measurements to foci and directrix
+- Ellipse: sum constant. Hyperbola: difference constant. Proven live.
+- 7 lessons, 5 challenges
 
-All files include light/dark mode toggle and touch support for mobile.
+### Complex Numbers
+
+Multiplication is rotation. Exponentiation is repeated rotation. See it, don't just believe it.
+
+- Two draggable points (z and w) in the complex plane
+- Product z·w shown live — magnitudes multiply, angles add
+- Conjugate toggle (mirror across real axis)
+- Power visualization z¹ through z¹² with auto-scaling spiral
+- Sliders for w angle, w magnitude, exponent n
+- 8 lessons, 5 challenges
+
+## Features
+
+- **Single file** (`src/math.html`, ~80KB) — zero dependencies, works offline
+- **Bilingual** — Slovak / English toggle, all text including lessons and challenges
+- **Light / Dark theme**
+- **Responsive** — canvases resize dynamically to any screen width
+- **Touch support** — works on phones and tablets
+- **HiDPI** — sharp on retina displays
+
+## Project structure
+
+```
+src/math.html              # The entire application
+docs/architecture.md       # Technical architecture
+docs/changelog.md          # Version history
+```
+
+## Usage
+
+```bash
+# Just open it
+open src/math.html
+
+# Or serve locally
+python3 -m http.server 8000
+# then visit http://localhost:8000/src/math.html
+```
 
 ## Author
 
